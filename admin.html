@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — The Dog Experience</title>
+  <meta name="theme-color" content="#1a1a1a"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="config.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header img { width: 36px; height: 36px; object-fit: contain; border-radius: 50%; background: #fff; padding: 2px; }
+    .header-title { font-size: 15px; font-weight: 700; }
+    .header-sub { font-size: 11px; color: #F5C842; }
+    .btn-deco {
+      background: rgba(255,255,255,0.1);
+      border: none; color: #fff;
+      padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; cursor: pointer;
+    }
+
+    /* ── NAVIGATION ── */
+    .nav-tabs {
+      display: flex;
+      background: #2a2a2a;
+      overflow-x: auto;
+      position: sticky;
+      top: 62px;
+      z-index: 99;
+    }
+    .nav-tab {
+      flex: 1; min-width: 65px;
+      padding: 11px 6px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .nav-tab.active { color: #2BBFB0; border-bottom-color: #2BBFB0; }
+    .nav-tab .ti { font-size: 17px; display: block; margin-bottom: 2px; }
+
+    /* ── PAGES ── */
+    .page { display: none; padding: 14px; max-width: 700px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* ── CARTES ── */
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2BBFB0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e8f8f7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    /* ── CLIENTS GRID ── */
+    .clients-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .client-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+      cursor: pointer;
+      border: 2px solid #e0e0e0;
+      transition: all 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .client-card:hover { border-color: #2BBFB0; transform: translateY(-2px); }
+    .client-card.selected { border-color: #2BBFB0; background: #e8f8f7; }
+    .client-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2BBFB0, #F5C842);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 8px;
+    }
+    .client-nom { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+    .client-chien { font-size: 11px; color: #888; margin-top: 2px; }
+    .client-profils { margin-top: 6px; display: flex; justify-content: center; gap: 3px; flex-wrap: wrap; }
+    .profil-tag {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+    .tag-chiot { background: #fef9e7; color: #b8960a; }
+    .tag-sensible { background: #f3e8ff; color: #7c3aed; }
+    .tag-reactif { background: #fff0f0; color: #e05555; }
+    .client-badge {
+      display: inline-block;
+      background: #e05555;
+      color: #fff;
+      border-radius: 10px;
+      font-size: 9px;
+      padding: 1px 5px;
+      margin-top: 4px;
+    }
+
+    /* ── FICHE CLIENT ── */
+    .fiche-client { display: none; }
+    .fiche-client.active { display: block; }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: none;
+      color: #2BBFB0; font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-bottom: 14px; padding: 0;
+    }
+
+    /* ── JOURNAL CLIENT ── */
+    .journal-entry {
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .journal-entry:last-child { border-bottom: none; }
+    .je-date { font-size: 12px; font-weight: 700; color: #2BBFB0; margin-bottom: 6px; }
+    .je-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .je-item { font-size: 12px; color: #555; }
+    .je-label { font-weight: 600; color: #888; font-size: 11px; }
+    .je-note { font-size: 12px; color: #444; font-style: italic; margin-top: 6px; line-height: 1.4; }
+
+    /* Emotion badges */
+    .e-serein { color: #27ae60; }
+    .e-peu_tendu, .e-fatigue { color: #e67e22; }
+    .e-stresse, .e-anxieux { color: #e05555; }
+    .e-bien, .e-tres_bien { color: #27ae60; }
+    .e-moyen { color: #e67e22; }
+    .e-difficile { color: #e05555; }
+
+    /* ── FORMULAIRES ── */
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+    label:first-child { margin-top: 0; }
+    input[type="text"], input[type="date"], input[type="time"],
+    input[type="number"], input[type="url"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1a1a1a;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      margin-bottom: 2px;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #2BBFB0; }
+    textarea { resize: vertical; min-height: 80px; }
+    select { background: #fff; }
+
+    .btn {
+      padding: 11px 18px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #2BBFB0; color: #fff; }
+    .btn-primary:hover { background: #22a89a; }
+    .btn-jaune { background: #F5C842; color: #1a1a1a; }
+    .btn-jaune:hover { background: #e0b030; }
+    .btn-rouge { background: #e05555; color: #fff; }
+    .btn-rouge:hover { background: #c0392b; }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #e0e0e0;
+      color: #555;
+    }
+    .btn-outline:hover { border-color: #2BBFB0; color: #2BBFB0; }
+    .btn-full { width: 100%; margin-top: 10px; padding: 13px; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+    /* ── MESSAGES ── */
+    .msg-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; margin-bottom: 14px; padding: 4px; }
+    .msg-bubble {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .msg-admin { background: #1a1a1a; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-client { background: #e8f8f7; color: #1a1a1a; align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg-meta { font-size: 10px; opacity: 0.6; margin-top: 3px; }
+    .msg-non-lu { background: #fff0f0; }
+
+    .msg-input-wrap { display: flex; gap: 8px; align-items: flex-end; }
+    .msg-input-wrap textarea { flex: 1; min-height: 60px; margin: 0; }
+
+    /* ── FICHES RESSOURCES ── */
+    .fiche-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .fiche-item:last-child { border-bottom: none; }
+    .fiche-thumb {
+      width: 50px; height: 50px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #f0f0f0;
+      flex-shrink: 0;
+    }
+    .fiche-thumb-placeholder {
+      width: 50px; height: 50px;
+      border-radius: 8px;
+      background: #e8f8f7;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .fiche-info { flex: 1; min-width: 0; }
+    .fiche-titre-item { font-size: 13px; font-weight: 700; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fiche-theme-item {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 8px;
+      background: #e8f8f7;
+      color: #2BBFB0;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+    .fiche-profil-item { font-size: 10px; color: #999; margin-top: 2px; }
+    .fiche-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-edit { background: #e8f8f7; color: #2BBFB0; }
+    .btn-edit:hover { background: #2BBFB0; color: #fff; }
+    .btn-del { background: #fff0f0; color: #e05555; }
+    .btn-del:hover { background: #e05555; color: #fff; }
+    .btn-send { background: #fef9e7; color: #b8960a; }
+    .btn-send:hover { background: #F5C842; color: #fff; }
+
+    /* Multi-images preview */
+    .imgs-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .img-preview-item {
+      position: relative;
+      width: 70px; height: 70px;
+    }
+    .img-preview-item img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; }
+    .img-remove {
+      position: absolute; top: -6px; right: -6px;
+      width: 18px; height: 18px;
+      background: #e05555; color: #fff;
+      border-radius: 50%; border: none;
+      font-size: 11px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-add-img {
+      width: 70px; height: 70px;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      background: none;
+      cursor: pointer;
+      font-size: 22px;
+      color: #ccc;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-add-img:hover { border-color: #2BBFB0; color: #2BBFB0; }
+
+    /* ── RDV ── */
+    .rdv-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .rdv-item:last-child { border-bottom: none; }
+    .rdv-date-box {
+      background: #2BBFB0; color: #fff;
+      border-radius: 10px; padding: 8px 12px;
+      text-align: center; min-width: 50px; flex-shrink: 0;
+    }
+    .rdv-jour { font-size: 18px; font-weight: 700; line-height: 1; }
+    .rdv-mois { font-size: 10px; opacity: 0.85; text-transform: uppercase; }
+    .rdv-info { flex: 1; }
+    .rdv-type { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+    .rdv-detail { font-size: 12px; color: #888; margin-top: 2px; }
+
+    /* ── FORFAITS ── */
+    .forfait-item {
+      background: #f8f8f8;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .forfait-nom { font-size: 13px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+    .forfait-progress { background: #e0e0e0; border-radius: 10px; height: 7px; overflow: hidden; margin-bottom: 6px; }
+    .forfait-bar { height: 100%; background: #2BBFB0; border-radius: 10px; }
+    .forfait-info { font-size: 12px; color: #666; }
+    .forfait-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+    /* ── ANNONCES ── */
+    .annonce-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .annonce-item:last-child { border-bottom: none; }
+    .annonce-titre { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+    .annonce-type {
+      display: inline-block;
+      font-size: 10px; padding: 2px 8px;
+      border-radius: 8px; font-weight: 700;
+      background: #fef9e7; color: #b8960a;
+      margin-bottom: 4px;
+    }
+    .annonce-preview { font-size: 12px; color: #888; margin-top: 4px; }
+
+    /* ── DASHBOARD ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .stat-val { font-size: 26px; font-weight: 700; color: #2BBFB0; }
+    .stat-label { font-size: 11px; color: #888; margin-top: 4px; }
+
+    .activite-item {
+      display: flex; gap: 10px; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f5f5f5;
+    }
+    .activite-item:last-child { border-bottom: none; }
+    .activite-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, #2BBFB0, #F5C842);
+      color: #fff; font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .activite-info { flex: 1; }
+    .activite-nom { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+    .activite-detail { font-size: 11px; color: #888; }
+    .activite-date { font-size: 11px; color: #bbb; white-space: nowrap; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      display: flex; align-items: flex-end; justify-content: center;
+      display: none;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 40px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 16px; }
+    .modal-close {
+      float: right;
+      background: #f0f0f0; border: none;
+      border-radius: 8px; padding: 4px 10px;
+      cursor: pointer; font-size: 13px; color: #666;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 90px; left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a; color: #fff;
+      padding: 12px 20px; border-radius: 12px;
+      font-size: 13px; font-weight: 600;
+      z-index: 999; opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.visible { opacity: 1; }
+
+    .vide { text-align: center; color: #bbb; font-size: 13px; padding: 20px 0; }
+    .badge { display: inline-block; background: #e05555; color: #fff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 4px; }
+
+    .recherche {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .recherche:focus { border-color: #2BBFB0; }
+
+    .filtres { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 2px; }
+    .filtre-btn {
+      flex-shrink: 0;
+      padding: 5px 12px;
+      border-radius: 16px;
+      border: 1.5px solid #e0e0e0;
+      background: #fff;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer; color: #666;
+      transition: all 0.2s;
+    }
+    .filtre-btn.active { background: #2BBFB0; border-color: #2BBFB0; color: #fff; }
+
+    .section-sep { height: 1px; background: #f0f0f0; margin: 16px 0; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <img src="https://i.imgur.com/rq4rDYi.png" alt="TDE"/>
+    <div>
+      <div class="header-title">The Dog Experience</div>
+      <div class="header-sub">Interface comportementaliste</div>
+    </div>
+  </div>
+  <button class="btn-deco" onclick="seDeconnecter()">Déconnexion</button>
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="afficherPage('dashboard')" id="tab-dashboard">
+    <span class="ti">🏠</span>Accueil
+  </div>
+  <div class="nav-tab" onclick="afficherPage('clients')" id="tab-clients">
+    <span class="ti">👥</span>Clients
+  </div>
+  <div class="nav-tab" onclick="afficherPage('messages')" id="tab-messages">
+    <span class="ti">💬</span>Messages<span class="badge" id="badge-msg" style="display:none">0</span>
+  </div>
+  <div class="nav-tab" onclick="afficherPage('fiches')" id="tab-fiches">
+    <span class="ti">📚</span>Fiches
+  </div>
+  <div class="nav-tab" onclick="afficherPage('annonces')" id="tab-annonces">
+    <span class="ti">📣</span>Annonces
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE DASHBOARD
+══════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div style="padding-top:12px">
+
+    <div class="stat-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="stat-clients">—</div><div class="stat-label">Clients</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-entrees">—</div><div class="stat-label">Entrées aujourd'hui</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-msgs">—</div><div class="stat-label">Messages non lus</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Activité récente</div>
+      <div id="activite-liste"><div class="vide">Chargement…</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📚 Dernières fiches ajoutées</div>
+      <div id="fiches-recentes"><div class="vide">Chargement…</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE CLIENTS
+══════════════════════════════════════ -->
+<div class="page" id="page-clients">
+  <div style="padding-top:12px">
+
+    <!-- Liste clients -->
+    <div id="vue-liste-clients">
+      <div class="clients-grid" id="clients-grid">
+        <div class="vide" style="grid-column:1/-1">Chargement…</div>
+      </div>
+    </div>
+
+    <!-- Fiche client -->
+    <div id="vue-fiche-client" class="fiche-client">
+      <button class="back-btn" onclick="retourClients()">← Retour aux clients</button>
+
+      <!-- Infos client -->
+      <div class="card" id="fiche-infos"></div>
+
+      <!-- Sous-onglets -->
+      <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px">
+        <button class="btn btn-primary" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('journal')">📓 Journal</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('rdv')">📅 RDV</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('forfaits')">🎟️ Forfaits</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('sante')">🏥 Santé</button>
+        <button class="btn btn-rouge" style="font-size:12px;padding:8px 14px" onclick="confirmerSuppression()">🗑️ Supprimer</button>
+      </div>
+
+      <!-- Journal client -->
+      <div id="sous-journal">
+        <div class="card">
+          <div class="card-title">📓 Journal (30 derniers jours)</div>
+          <div id="journal-client-list"><div class="vide">Chargement…</div></div>
+        </div>
+      </div>
+
+      <!-- RDV client -->
+      <div id="sous-rdv" style="display:none">
+        <div class="card">
+          <div class="card-title">📅 Rendez-vous
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" onclick="ouvrirModalRdv()">+ Ajouter</button>
+          </div>
+          <div id="rdv-client-list"><div class="vide">Aucun RDV</div></div>
+        </div>
+      </div>
+
+      <!-- Forfaits client -->
+      <div id="sous-forfaits" style="display:none">
+        <div class="card">
+          <div class="card-title">🎟️ Forfaits
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" onclick="ouvrirModalForfait()">+ Ajouter</button>
+          </div>
+          <div id="forfaits-client-list"><div class="vide">Aucun forfait</div></div>
+        </div>
+      </div>
+
+      <!-- Santé client -->
+      <div id="sous-sante" style="display:none">
+        <div class="card">
+          <div class="card-title">🏥 Suivi santé</div>
+          <div id="sante-client-list"><div class="vide">Aucune entrée santé</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE MESSAGES
+══════════════════════════════════════ -->
+<div class="page" id="page-messages">
+  <div style="padding-top:12px">
+
+    <!-- Sélecteur client pour messages -->
+    <div class="card">
+      <div class="card-title">💬 Messagerie clients</div>
+      <select id="select-client-msg" onchange="chargerMessagesClient()">
+        <option value="">— Sélectionne un client —</option>
+      </select>
+    </div>
+
+    <div id="zone-messages" style="display:none">
+      <div class="card">
+        <div class="card-title" id="msg-client-titre">Messages</div>
+        <div class="msg-list" id="msg-list-admin"></div>
+        <div class="msg-input-wrap">
+          <textarea id="msg-admin-input" placeholder="Ta réponse…"></textarea>
+          <button class="btn btn-primary" onclick="envoyerReponse()">Envoyer</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE FICHES
+══════════════════════════════════════ -->
+<div class="page" id="page-fiches">
+  <div style="padding-top:12px">
+
+    <div class="card">
+      <div class="card-title">📚 Fiches ressources
+        <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" onclick="ouvrirModalFiche()">+ Créer</button>
+      </div>
+      <input class="recherche" id="recherche-fiches" placeholder="🔍 Rechercher une fiche…" oninput="filtrerFichesAdmin()"/>
+      <div class="filtres" id="filtres-fiches">
+        <button class="filtre-btn active" onclick="setFiltreTheme('',this)">Toutes</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Lien',this)">Lien</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Comportement',this)">Comportement</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Réactivité',this)">Réactivité</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Sensibilité',this)">Sensibilité</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Sommeil',this)">Sommeil</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Socialisation',this)">Socialisation</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Quotidien',this)">Quotidien</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Santé',this)">Santé</button>
+      </div>
+      <div id="fiches-admin-list"><div class="vide">Chargement…</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE ANNONCES
+══════════════════════════════════════ -->
+<div class="page" id="page-annonces">
+  <div style="padding-top:12px">
+    <div class="card">
+      <div class="card-title">📣 Nouvelle annonce à tous les clients</div>
+
+      <label>Type d'annonce</label>
+      <select id="annonce-type">
+        <option value="actualite">📰 Actualité</option>
+        <option value="fiche">📚 Nouvelle fiche ressource</option>
+        <option value="atelier">🐾 Atelier / Événement</option>
+      </select>
+
+      <label>Titre</label>
+      <input type="text" id="annonce-titre" placeholder="ex: Nouvel atelier Pause ZEN en juillet !"/>
+
+      <label>Message</label>
+      <textarea id="annonce-contenu" placeholder="Décris l'annonce…" rows="4"></textarea>
+
+      <label>Image (URL, facultatif)</label>
+      <input type="url" id="annonce-image" placeholder="https://…"/>
+
+      <button class="btn btn-jaune btn-full" onclick="envoyerAnnonce()">
+        📣 Envoyer à tous les clients
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Annonces précédentes</div>
+      <div id="annonces-list"><div class="vide">Aucune annonce</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
+
+<!-- Modal RDV -->
+<div class="modal-overlay" id="modal-rdv">
+  <div class="modal">
+    <button class="modal-close" onclick="fermerModal('modal-rdv')">✕ Fermer</button>
+    <div class="modal-title">📅 Ajouter un rendez-vous</div>
+    <label>Type de RDV</label>
+    <select id="rdv-type">
+      <option>Première séance</option>
+      <option>Suivi</option>
+      <option>Bilan 3 mois</option>
+      <option>Bilan 6 mois</option>
+      <option>Bilan 12 mois</option>
+      <option>Séance terrain</option>
+      <option>Cours collectif</option>
+    </select>
+    <label>Date</label>
+    <input type="date" id="rdv-date"/>
+    <label>Heure</label>
+    <input type="time" id="rdv-heure"/>
+    <label>Lieu (facultatif)</label>
+    <input type="text" id="rdv-lieu" placeholder="ex: Haussy, en visio…"/>
+    <label>Note (facultatif)</label>
+    <textarea id="rdv-note" rows="2" placeholder="Informations complémentaires…"></textarea>
+    <button class="btn btn-primary btn-full" onclick="ajouterRdv()">Ajouter le RDV</button>
+  </div>
+</div>
+
+<!-- Modal Forfait -->
+<div class="modal-overlay" id="modal-forfait">
+  <div class="modal">
+    <button class="modal-close" onclick="fermerModal('modal-forfait')">✕ Fermer</button>
+    <div class="modal-title" id="modal-forfait-titre">🎟️ Ajouter un forfait</div>
+    <label>Nom du forfait</label>
+    <input type="text" id="forfait-nom" placeholder="ex: Parcours Apaisement, Suivi chiot 3 mois…"/>
+    <label>Nombre de séances total</label>
+    <input type="number" id="forfait-total" min="1" placeholder="ex: 5"/>
+    <label>Séances déjà utilisées</label>
+    <input type="number" id="forfait-utilisees" min="0" value="0"/>
+    <label>Date de début (facultatif)</label>
+    <input type="date" id="forfait-debut"/>
+    <label>Date de fin (facultatif)</label>
+    <input type="date" id="forfait-fin"/>
+    <label>Note (facultatif)</label>
+    <textarea id="forfait-note" rows="2" placeholder="Informations sur le forfait…"></textarea>
+    <button class="btn btn-primary btn-full" onclick="sauvegarderForfait()">Enregistrer</button>
+  </div>
+</div>
+
+<!-- Modal Fiche -->
+<div class="modal-overlay" id="modal-fiche">
+  <div class="modal">
+    <button class="modal-close" onclick="fermerModal('modal-fiche')">✕ Fermer</button>
+    <div class="modal-title" id="modal-fiche-titre">📚 Créer une fiche</div>
+
+    <label>Titre</label>
+    <input type="text" id="fiche-titre" placeholder="Titre de la fiche"/>
+
+    <label>Thème</label>
+    <select id="fiche-theme">
+      <option>Lien</option>
+      <option>Comportement</option>
+      <option>Réactivité</option>
+      <option>Sensibilité</option>
+      <option>Sommeil</option>
+      <option>Socialisation</option>
+      <option>Quotidien</option>
+      <option>Santé</option>
+    </select>
+
+    <label>Profil cible</label>
+    <select id="fiche-profil">
+      <option value="tous">Tous les profils</option>
+      <option value="chiot">Chiot uniquement</option>
+      <option value="sensible">Sensible uniquement</option>
+      <option value="reactif">Réactif uniquement</option>
+    </select>
+
+    <label>Contenu</label>
+    <textarea id="fiche-contenu" rows="6" placeholder="Contenu de la fiche…"></textarea>
+
+    <label>Images (URLs)</label>
+    <div class="imgs-preview" id="imgs-preview"></div>
+    <input type="url" id="fiche-img-input" placeholder="Colle une URL d'image puis clique +"
+           style="margin-top:8px"/>
+    <button class="btn btn-outline" style="margin-top:6px;font-size:12px;padding:7px 12px"
+            onclick="ajouterImage()">+ Ajouter cette image</button>
+
+    <label style="margin-top:14px">Vidéo YouTube (URL, facultatif)</label>
+    <input type="url" id="fiche-video" placeholder="https://www.youtube.com/watch?v=…"/>
+
+    <button class="btn btn-primary btn-full" onclick="sauvegarderFiche()">Enregistrer la fiche</button>
+  </div>
+</div>
+
+<!-- Modal Envoi Fiche -->
+<div class="modal-overlay" id="modal-envoyer-fiche">
+  <div class="modal">
+    <button class="modal-close" onclick="fermerModal('modal-envoyer-fiche')">✕ Fermer</button>
+    <div class="modal-title">📬 Envoyer la fiche à…</div>
+    <div id="liste-clients-envoi"><div class="vide">Chargement…</div></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── État global ──
+let tousClients = [];
+let clientSelectionne = null;
+let toutesLesfiches = [];
+let filtreTheme = '';
+let ficheEnEdition = null;
+let imagesUrls = [];
+let forfaitEnEdition = null;
+let ficheAEnvoyer = null;
+let clientMsgSelectionne = null;
+
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+// ── Init ──
+async function init() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || user.id !== ADMIN_UUID) {
+    window.location.href = 'index.html'; return;
+  }
+  chargerDashboard();
+  chargerClients();
+  chargerFichesAdmin();
+  chargerAnnonces();
+  verifierMsgsNonLus();
+}
+
+// ── Navigation ──
+function afficherPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('tab-' + page).classList.add('active');
+  if (page === 'messages') chargerSelectClients();
+}
+
+// ── Dashboard ──
+async function chargerDashboard() {
+  const today = new Date().toISOString().split('T')[0];
+
+  const [{ count: nbClients }, { count: nbEntrees }, { count: nbMsgs }] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('journal').select('*', { count: 'exact', head: true }).eq('date', today),
+    supabase.from('messages').select('*', { count: 'exact', head: true }).eq('expediteur','client').eq('lu', false)
+  ]);
+
+  document.getElementById('stat-clients').textContent = nbClients || 0;
+  document.getElementById('stat-entrees').textContent = nbEntrees || 0;
+  document.getElementById('stat-msgs').textContent = nbMsgs || 0;
+  if (nbMsgs > 0) {
+    const b = document.getElementById('badge-msg');
+    b.textContent = nbMsgs; b.style.display = 'inline';
+  }
+
+  // Activité récente
+  const { data: entrees } = await supabase.from('journal')
+    .select('*, profiles(prenom, nom_chien)')
+    .order('created_at', { ascending: false }).limit(8);
+
+  const al = document.getElementById('activite-liste');
+  if (!entrees || entrees.length === 0) { al.innerHTML = '<div class="vide">Aucune activité récente</div>'; }
+  else {
+    al.innerHTML = '';
+    entrees.forEach(e => {
+      const p = e.profiles;
+      if (!p) return;
+      const div = document.createElement('div');
+      div.className = 'activite-item';
+      const initiale = p.prenom ? p.prenom[0].toUpperCase() : '?';
+      const d = new Date(e.created_at);
+      div.innerHTML = `
+        <div class="activite-avatar">${initiale}</div>
+        <div class="activite-info">
+          <div class="activite-nom">${p.prenom} — ${p.nom_chien}</div>
+          <div class="activite-detail">Entrée du ${new Date(e.date).toLocaleDateString('fr-FR')}</div>
+        </div>
+        <div class="activite-date">${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>`;
+      al.appendChild(div);
+    });
+  }
+
+  // Fiches récentes
+  const { data: fiches } = await supabase.from('fiches')
+    .select('*').order('created_at', { ascending: false }).limit(5);
+  const fr = document.getElementById('fiches-recentes');
+  if (!fiches || fiches.length === 0) { fr.innerHTML = '<div class="vide">Aucune fiche</div>'; }
+  else {
+    fr.innerHTML = '';
+    fiches.forEach(f => {
+      const imgs = f.images_urls ? f.images_urls.split('|') : [];
+      const div = document.createElement('div');
+      div.className = 'fiche-item';
+      div.innerHTML = `
+        ${imgs[0] ? `<img class="fiche-thumb" src="${imgs[0]}"/>` : `<div class="fiche-thumb-placeholder">📄</div>`}
+        <div class="fiche-info">
+          <div class="fiche-titre-item">${f.titre}</div>
+          <span class="fiche-theme-item">${f.theme || '—'}</span>
+        </div>`;
+      fr.appendChild(div);
+    });
+  }
+}
+
+// ── Clients ──
+async function chargerClients() {
+  const { data } = await supabase.from('profiles').select('*').order('created_at');
+  tousClients = data || [];
+  afficherGrilleClients();
+  // Peupler select messages
+  chargerSelectClients();
+}
+
+function afficherGrilleClients() {
+  const grid = document.getElementById('clients-grid');
+  if (tousClients.length === 0) {
+    grid.innerHTML = '<div class="vide" style="grid-column:1/-1">Aucun client inscrit</div>'; return;
+  }
+  grid.innerHTML = '';
+  tousClients.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'client-card';
+    div.onclick = () => ouvrirFicheClient(c);
+    const initiale = c.prenom ? c.prenom[0].toUpperCase() : '?';
+    let tags = '';
+    if (c.suivi_chiot) tags += '<span class="profil-tag tag-chiot">🐶 Chiot</span>';
+    if (c.suivi_sensible) tags += '<span class="profil-tag tag-sensible">🌸 Sensible</span>';
+    if (c.suivi_reactif) tags += '<span class="profil-tag tag-reactif">⚡ Réactif</span>';
+    div.innerHTML = `
+      <div class="client-avatar">${initiale}</div>
+      <div class="client-nom">${c.prenom}</div>
+      <div class="client-chien">🐕 ${c.nom_chien}</div>
+      <div class="client-profils">${tags}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+async function ouvrirFicheClient(client) {
+  clientSelectionne = client;
+  document.getElementById('vue-liste-clients').style.display = 'none';
+  document.getElementById('vue-fiche-client').classList.add('active');
+
+  // Infos
+  const age = client.date_naissance_chien
+    ? calculerAge(client.date_naissance_chien)
+    : 'âge non renseigné';
+  const fi = document.getElementById('fiche-infos');
+  let tags = '';
+  if (client.suivi_chiot) tags += '<span class="profil-tag tag-chiot" style="font-size:11px;padding:3px 8px">🐶 Chiot</span>';
+  if (client.suivi_sensible) tags += '<span class="profil-tag tag-sensible" style="font-size:11px;padding:3px 8px">🌸 Sensible</span>';
+  if (client.suivi_reactif) tags += '<span class="profil-tag tag-reactif" style="font-size:11px;padding:3px 8px">⚡ Réactif</span>';
+  fi.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="client-avatar" style="width:52px;height:52px;font-size:22px">${client.prenom[0]}</div>
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#1a1a1a">${client.prenom}</div>
+        <div style="font-size:13px;color:#888;margin-top:2px">🐕 ${client.nom_chien} — ${age}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${tags}</div>
+      </div>
+    </div>`;
+
+  afficherSousOnglet('journal');
+}
+
+function calculerAge(dateNaissance) {
+  const d = new Date(dateNaissance);
+  const diff = Date.now() - d.getTime();
+  const mois = Math.floor(diff / (1000 * 60 * 60 * 24 * 30.44));
+  if (mois < 12) return `${mois} mois`;
+  const ans = Math.floor(mois / 12);
+  const m = mois % 12;
+  return m > 0 ? `${ans} an${ans > 1 ? 's' : ''} ${m} mois` : `${ans} an${ans > 1 ? 's' : ''}`;
+}
+
+function retourClients() {
+  clientSelectionne = null;
+  document.getElementById('vue-fiche-client').classList.remove('active');
+  document.getElementById('vue-liste-clients').style.display = 'block';
+}
+
+function afficherSousOnglet(onglet) {
+  ['journal','rdv','forfaits','sante'].forEach(o => {
+    document.getElementById('sous-' + o).style.display = o === onglet ? 'block' : 'none';
+  });
+  if (onglet === 'journal') chargerJournalClient();
+  if (onglet === 'rdv') chargerRdvClient();
+  if (onglet === 'forfaits') chargerForfaitsClient();
+  if (onglet === 'sante') chargerSanteClient();
+}
+
+async function chargerJournalClient() {
+  if (!clientSelectionne) return;
+  const { data } = await supabase.from('journal')
+    .select('*').eq('user_id', clientSelectionne.id)
+    .order('date', { ascending: false }).limit(30);
+
+  const container = document.getElementById('journal-client-list');
+  if (!data || data.length === 0) { container.innerHTML = '<div class="vide">Aucune entrée</div>'; return; }
+
+  container.innerHTML = '';
+  data.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'journal-entry';
+    const d = new Date(e.date);
+    let html = `<div class="je-date">${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+    html += '<div class="je-grid">';
+    if (e.humain_etat) html += `<div class="je-item"><span class="je-label">Humain </span><span class="e-${e.humain_etat}">${labelEtat(e.humain_etat)}</span></div>`;
+    if (e.humeur) html += `<div class="je-item"><span class="je-label">Humeur </span><span class="e-${e.humeur}">${labelEtat(e.humeur)}</span></div>`;
+    if (e.emotion_maison) html += `<div class="je-item"><span class="je-label">Maison </span><span class="e-${e.emotion_maison}">${labelEtat(e.emotion_maison)}</span></div>`;
+    if (e.emotion_exterieur) html += `<div class="je-item"><span class="je-label">Extérieur </span><span class="e-${e.emotion_exterieur}">${labelEtat(e.emotion_exterieur)}</span></div>`;
+    if (e.charge_allostatique) html += `<div class="je-item"><span class="je-label">Charge </span>${e.charge_allostatique}/10</div>`;
+    if (e.aboiements) html += `<div class="je-item"><span class="je-label">Aboiements </span>${e.aboiements}</div>`;
+    const declTotal = (e.decl_chiens||0)+(e.decl_humains||0)+(e.decl_voitures||0)+(e.decl_velos||0)+(e.decl_bruits||0)+(e.decl_autres_count||0);
+    if (declTotal > 0) html += `<div class="je-item"><span class="je-label">Déclenchements </span>${declTotal}</div>`;
+    if (e.intensite_reaction) html += `<div class="je-item"><span class="je-label">Intensité </span>${labelEtat(e.intensite_reaction)}</div>`;
+    if (e.anxiete_separation) html += `<div class="je-item"><span class="je-label">Anxiété sépa. </span>⚠️ Oui</div>`;
+    if (e.mise_au_vert) html += `<div class="je-item"><span class="je-label">Mise au vert </span>✅</div>`;
+    html += '</div>';
+    if (e.note_libre) html += `<div class="je-note">💬 ${e.note_libre}</div>`;
+    if (e.humain_note_libre) html += `<div class="je-note">🧑 ${e.humain_note_libre}</div>`;
+    div.innerHTML = html;
+    container.appendChild(div);
+  });
+}
+
+function labelEtat(val) {
+  const labels = {
+    serein:'😌 Serein', bien:'😊 Bien', tres_bien:'🌟 Très bien',
+    fatigue:'😴 Fatigué', peu_tendu:'😕 Peu tendu',
+    stresse:'😰 Stressé', anxieux:'😱 Anxieux',
+    difficile:'😟 Difficile', moyen:'😐 Moyen',
+    surcharge:'🤯 Surcharge', decouvrage:'😔 Découragé',
+    faible:'🟢 Faible', modere:'🟡 Modérée',
+    intense:'🟠 Intense', tres_intense:'🔴 Très intense',
+  };
+  return labels[val] || val;
+}
+
+// ── RDV ──
+async function chargerRdvClient() {
+  if (!clientSelectionne) return;
+  const { data } = await supabase.from('rendez_vous')
+    .select('*').eq('user_id', clientSelectionne.id)
+    .order('date_rdv');
+  const c = document.getElementById('rdv-client-list');
+  if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucun RDV</div>'; return; }
+  const moisFR = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  c.innerHTML = '';
+  data.forEach(r => {
+    const d = new Date(r.date_rdv);
+    const div = document.createElement('div');
+    div.className = 'rdv-item';
+    div.innerHTML = `
+      <div class="rdv-date-box"><div class="rdv-jour">${d.getDate()}</div><div class="rdv-mois">${moisFR[d.getMonth()]}</div></div>
+      <div class="rdv-info">
+        <div class="rdv-type">${r.type_rdv || 'RDV'}</div>
+        <div class="rdv-detail">${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}${r.lieu ? ' · ' + r.lieu : ''}</div>
+        ${r.note ? `<div style="font-size:11px;color:#aaa;font-style:italic;margin-top:2px">${r.note}</div>` : ''}
+      </div>
+      <button class="btn-icon btn-del" onclick="supprimerRdv('${r.id}')">🗑️</button>`;
+    c.appendChild(div);
+  });
+}
+
+function ouvrirModalRdv() { document.getElementById('modal-rdv').classList.add('open'); }
+
+async function ajouterRdv() {
+  const date = document.getElementById('rdv-date').value;
+  const heure = document.getElementById('rdv-heure').value;
+  if (!date) { showToast('⚠️ Sélectionne une date'); return; }
+  const dateTime = heure ? `${date}T${heure}:00` : `${date}T09:00:00`;
+  const { error } = await supabase.from('rendez_vous').insert({
+    user_id: clientSelectionne.id,
+    date_rdv: dateTime,
+    type_rdv: document.getElementById('rdv-type').value,
+    lieu: document.getElementById('rdv-lieu').value || null,
+    note: document.getElementById('rdv-note').value || null,
+  });
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  fermerModal('modal-rdv');
+  chargerRdvClient();
+  showToast('✅ RDV ajouté !');
+}
+
+async function supprimerRdv(id) {
+  if (!confirm('Supprimer ce RDV ?')) return;
+  await supabase.from('rendez_vous').delete().eq('id', id);
+  chargerRdvClient();
+  showToast('🗑️ RDV supprimé');
+}
+
+// ── Forfaits ──
+async function chargerForfaitsClient() {
+  if (!clientSelectionne) return;
+  const { data } = await supabase.from('forfaits')
+    .select('*').eq('user_id', clientSelectionne.id).order('created_at', { ascending: false });
+  const c = document.getElementById('forfaits-client-list');
+  if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucun forfait</div>'; return; }
+  c.innerHTML = '';
+  data.forEach(f => {
+    const pct = f.nb_seances_total > 0 ? Math.round((f.nb_seances_utilisees / f.nb_seances_total) * 100) : 0;
+    const restantes = (f.nb_seances_total || 0) - (f.nb_seances_utilisees || 0);
+    const div = document.createElement('div');
+    div.className = 'forfait-item';
+    div.innerHTML = `
+      <div class="forfait-nom">${f.nom_forfait} ${f.actif ? '' : '<span style="color:#bbb;font-size:11px">(terminé)</span>'}</div>
+      <div class="forfait-progress"><div class="forfait-bar" style="width:${pct}%"></div></div>
+      <div class="forfait-info">${f.nb_seances_utilisees}/${f.nb_seances_total} séances · <strong>${restantes} restante${restantes > 1 ? 's' : ''}</strong>
+      ${f.date_fin ? ` · Fin: ${new Date(f.date_fin).toLocaleDateString('fr-FR')}` : ''}</div>
+      ${f.note ? `<div style="font-size:11px;color:#888;font-style:italic;margin-top:4px">${f.note}</div>` : ''}
+      <div class="forfait-actions">
+        <button class="btn btn-outline" style="font-size:11px;padding:5px 10px" onclick="utiliserSeance('${f.id}',${f.nb_seances_utilisees},${f.nb_seances_total})">+1 séance utilisée</button>
+        <button class="btn btn-outline" style="font-size:11px;padding:5px 10px" onclick="editerForfait(${JSON.stringify(f).replace(/"/g,'&quot;')})">✏️ Modifier</button>
+        <button class="btn btn-rouge" style="font-size:11px;padding:5px 10px" onclick="supprimerForfait('${f.id}')">🗑️</button>
+      </div>`;
+    c.appendChild(div);
+  });
+}
+
+function ouvrirModalForfait() {
+  forfaitEnEdition = null;
+  document.getElementById('modal-forfait-titre').textContent = '🎟️ Ajouter un forfait';
+  ['forfait-nom','forfait-note'].forEach(id => document.getElementById(id).value = '');
+  ['forfait-total','forfait-utilisees'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('forfait-utilisees').value = '0';
+  ['forfait-debut','forfait-fin'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-forfait').classList.add('open');
+}
+
+function editerForfait(f) {
+  forfaitEnEdition = f;
+  document.getElementById('modal-forfait-titre').textContent = '✏️ Modifier le forfait';
+  document.getElementById('forfait-nom').value = f.nom_forfait || '';
+  document.getElementById('forfait-total').value = f.nb_seances_total || '';
+  document.getElementById('forfait-utilisees').value = f.nb_seances_utilisees || 0;
+  document.getElementById('forfait-debut').value = f.date_debut || '';
+  document.getElementById('forfait-fin').value = f.date_fin || '';
+  document.getElementById('forfait-note').value = f.note || '';
+  document.getElementById('modal-forfait').classList.add('open');
+}
+
+async function sauvegarderForfait() {
+  const donnees = {
+    user_id: clientSelectionne.id,
+    nom_forfait: document.getElementById('forfait-nom').value,
+    nb_seances_total: parseInt(document.getElementById('forfait-total').value) || null,
+    nb_seances_utilisees: parseInt(document.getElementById('forfait-utilisees').value) || 0,
+    date_debut: document.getElementById('forfait-debut').value || null,
+    date_fin: document.getElementById('forfait-fin').value || null,
+    note: document.getElementById('forfait-note').value || null,
+  };
+  if (!donnees.nom_forfait) { showToast('⚠️ Nom du forfait requis'); return; }
+
+  let error;
+  if (forfaitEnEdition) {
+    ({ error } = await supabase.from('forfaits').update(donnees).eq('id', forfaitEnEdition.id));
+  } else {
+    ({ error } = await supabase.from('forfaits').insert(donnees));
+  }
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  fermerModal('modal-forfait');
+  chargerForfaitsClient();
+  showToast('✅ Forfait enregistré !');
+}
+
+async function utiliserSeance(id, utilisees, total) {
+  if (utilisees >= total) { showToast('⚠️ Toutes les séances ont été utilisées'); return; }
+  await supabase.from('forfaits').update({ nb_seances_utilisees: utilisees + 1 }).eq('id', id);
+  chargerForfaitsClient();
+  showToast('✅ Séance comptabilisée');
+}
+
+async function supprimerForfait(id) {
+  if (!confirm('Supprimer ce forfait ?')) return;
+  await supabase.from('forfaits').delete().eq('id', id);
+  chargerForfaitsClient();
+  showToast('🗑️ Forfait supprimé');
+}
+
+// ── Santé client ──
+async function chargerSanteClient() {
+  if (!clientSelectionne) return;
+  const { data } = await supabase.from('sante')
+    .select('*').eq('user_id', clientSelectionne.id)
+    .order('date', { ascending: false }).limit(20);
+  const c = document.getElementById('sante-client-list');
+  if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucune entrée santé</div>'; return; }
+  c.innerHTML = '';
+  data.forEach(s => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:10px 0;border-bottom:1px solid #f5f5f5';
+    div.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:#2BBFB0">${new Date(s.date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+      ${s.symptomes ? `<div style="font-size:12px;color:#e05555;margin-top:3px">🔍 ${s.symptomes}</div>` : ''}
+      ${s.symptomes_note ? `<div style="font-size:12px;color:#555;margin-top:2px">${s.symptomes_note}</div>` : ''}
+      ${s.traitement_nom ? `<div style="font-size:12px;color:#444;margin-top:3px">💊 ${s.traitement_nom} ${s.traitement_dose||''}</div>` : ''}
+      ${s.note_sante ? `<div style="font-size:12px;color:#888;font-style:italic;margin-top:3px">${s.note_sante}</div>` : ''}`;
+    c.appendChild(div);
+  });
+}
+
+// ── Suppression client ──
+async function confirmerSuppression() {
+  if (!clientSelectionne) return;
+  if (!confirm(`Supprimer définitivement ${clientSelectionne.prenom} et toutes ses données ?`)) return;
+  const id = clientSelectionne.id;
+  await Promise.all([
+    supabase.from('journal').delete().eq('user_id', id),
+    supabase.from('sante').delete().eq('user_id', id),
+    supabase.from('messages').delete().eq('user_id', id),
+    supabase.from('rendez_vous').delete().eq('user_id', id),
+    supabase.from('forfaits').delete().eq('user_id', id),
+    supabase.from('fiches_envoyees').delete().eq('user_id', id),
+    supabase.from('profiles').delete().eq('id', id),
+  ]);
+  showToast('🗑️ Client supprimé');
+  retourClients();
+  chargerClients();
+}
+
+// ── Messages ──
+function chargerSelectClients() {
+  const sel = document.getElementById('select-client-msg');
+  const valActuelle = sel.value;
+  sel.innerHTML = '<option value="">— Sélectionne un client —</option>';
+  tousClients.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${c.prenom} — ${c.nom_chien}`;
+    sel.appendChild(opt);
+  });
+  if (valActuelle) sel.value = valActuelle;
+}
+
+async function chargerMessagesClient() {
+  const userId = document.getElementById('select-client-msg').value;
+  if (!userId) { document.getElementById('zone-messages').style.display = 'none'; return; }
+
+  clientMsgSelectionne = tousClients.find(c => c.id === userId);
+  document.getElementById('zone-messages').style.display = 'block';
+  document.getElementById('msg-client-titre').textContent =
+    `💬 ${clientMsgSelectionne?.prenom} — ${clientMsgSelectionne?.nom_chien}`;
+
+  const { data } = await supabase.from('messages')
+    .select('*').eq('user_id', userId).order('created_at');
+
+  // Marquer comme lus
+  const nonLus = (data || []).filter(m => m.expediteur === 'client' && !m.lu).map(m => m.id);
+  if (nonLus.length > 0) await supabase.from('messages').update({ lu: true }).in('id', nonLus);
+
+  const list = document.getElementById('msg-list-admin');
+  if (!data || data.length === 0) { list.innerHTML = '<div class="vide">Aucun message</div>'; return; }
+  list.innerHTML = '';
+  data.forEach(m => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `display:flex;flex-direction:column;align-items:${m.expediteur === 'admin' ? 'flex-end' : 'flex-start'}`;
+    const d = new Date(m.created_at);
+    wrap.innerHTML = `
+      <div class="msg-bubble msg-${m.expediteur === 'admin' ? 'admin' : 'client'}${!m.lu && m.expediteur === 'client' ? ' msg-non-lu' : ''}">
+        ${m.contenu}
+        ${m.image_url ? `<br/><img src="${m.image_url}" style="max-width:180px;border-radius:8px;margin-top:6px"/>` : ''}
+      </div>
+      <div class="msg-meta" style="margin-${m.expediteur==='admin'?'right':'left'}:6px">
+        ${m.expediteur === 'admin' ? 'Laëtitia' : clientMsgSelectionne?.prenom} · ${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+      </div>`;
+    list.appendChild(wrap);
+  });
+  list.scrollTop = list.scrollHeight;
+  verifierMsgsNonLus();
+}
+
+async function envoyerReponse() {
+  const userId = document.getElementById('select-client-msg').value;
+  const contenu = document.getElementById('msg-admin-input').value.trim();
+  if (!userId || !contenu) return;
+
+  const { error } = await supabase.from('messages').insert({
+    user_id: userId,
+    expediteur: 'admin',
+    contenu,
+    lu: false
+  });
+  if (error) { showToast('❌ Erreur'); return; }
+  document.getElementById('msg-admin-input').value = '';
+
+  // Notifier le client par email
+  const client = tousClients.find(c => c.id === userId);
+  if (client) {
+    const { data: userData } = await supabase.auth.admin?.getUserById?.(userId) || { data: null };
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
+        client_prenom: client.prenom,
+        chien_nom: client.nom_chien,
+        client_email: userData?.user?.email || '',
+        message: contenu
+      });
+    } catch(e) { console.warn('Email non envoyé', e); }
+  }
+
+  chargerMessagesClient();
+  showToast('✅ Réponse envoyée !');
+}
+
+async function verifierMsgsNonLus() {
+  const { count } = await supabase.from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('expediteur','client').eq('lu', false);
+  const badge = document.getElementById('badge-msg');
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+  else badge.style.display = 'none';
+}
+
+// ── Fiches Admin ──
+async function chargerFichesAdmin() {
+  const { data } = await supabase.from('fiches').select('*').order('created_at', { ascending: false });
+  toutesLesfiches = data || [];
+  afficherFichesAdmin(toutesLesfiches);
+}
+
+function filtrerFichesAdmin() {
+  const q = document.getElementById('recherche-fiches').value.toLowerCase();
+  let liste = toutesLesfiches;
+  if (filtreTheme) liste = liste.filter(f => f.theme === filtreTheme);
+  if (q) liste = liste.filter(f => f.titre.toLowerCase().includes(q) || (f.contenu||'').toLowerCase().includes(q));
+  afficherFichesAdmin(liste);
+}
+
+function setFiltreTheme(theme, btn) {
+  filtreTheme = theme;
+  document.querySelectorAll('#filtres-fiches .filtre-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filtrerFichesAdmin();
+}
+
+function afficherFichesAdmin(liste) {
+  const c = document.getElementById('fiches-admin-list');
+  if (liste.length === 0) { c.innerHTML = '<div class="vide">Aucune fiche</div>'; return; }
+  c.innerHTML = '';
+  liste.forEach(f => {
+    const imgs = f.images_urls ? f.images_urls.split('|') : [];
+    const div = document.createElement('div');
+    div.className = 'fiche-item';
+    div.innerHTML = `
+      ${imgs[0] ? `<img class="fiche-thumb" src="${imgs[0]}"/>` : `<div class="fiche-thumb-placeholder">📄</div>`}
+      <div class="fiche-info">
+        <div class="fiche-titre-item">${f.titre}</div>
+        <span class="fiche-theme-item">${f.theme || '—'}</span>
+        <div class="fiche-profil-item">${labelProfil(f.profil_cible)}</div>
+      </div>
+      <div class="fiche-actions">
+        <button class="btn-icon btn-send" title="Envoyer à un client" onclick="ouvrirEnvoiFiche('${f.id}')">📬</button>
+        <button class="btn-icon btn-edit" title="Modifier" onclick="ouvrirEditionFiche('${f.id}')">✏️</button>
+        <button class="btn-icon btn-del" title="Supprimer" onclick="supprimerFiche('${f.id}')">🗑️</button>
+      </div>`;
+    c.appendChild(div);
+  });
+}
+
+function labelProfil(p) {
+  return { tous:'👥 Tous', chiot:'🐶 Chiot', sensible:'🌸 Sensible', reactif:'⚡ Réactif' }[p] || p || '';
+}
+
+function ouvrirModalFiche() {
+  ficheEnEdition = null;
+  imagesUrls = [];
+  document.getElementById('modal-fiche-titre').textContent = '📚 Créer une fiche';
+  ['fiche-titre','fiche-contenu','fiche-video','fiche-img-input'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('imgs-preview').innerHTML = '';
+  document.getElementById('modal-fiche').classList.add('open');
+}
+
+function ouvrirEditionFiche(id) {
+  const f = toutesLesfiches.find(x => x.id === id);
+  if (!f) return;
+  ficheEnEdition = f;
+  imagesUrls = f.images_urls ? f.images_urls.split('|').filter(Boolean) : [];
+  document.getElementById('modal-fiche-titre').textContent = '✏️ Modifier la fiche';
+  document.getElementById('fiche-titre').value = f.titre || '';
+  document.getElementById('fiche-theme').value = f.theme || 'Comportement';
+  document.getElementById('fiche-profil').value = f.profil_cible || 'tous';
+  document.getElementById('fiche-contenu').value = f.contenu || '';
+  document.getElementById('fiche-video').value = f.video_url || '';
+  document.getElementById('fiche-img-input').value = '';
+  renderImgsPreview();
+  document.getElementById('modal-fiche').classList.add('open');
+}
+
+function ajouterImage() {
+  const url = document.getElementById('fiche-img-input').value.trim();
+  if (!url) return;
+  imagesUrls.push(url);
+  document.getElementById('fiche-img-input').value = '';
+  renderImgsPreview();
+}
+
+function renderImgsPreview() {
+  const c = document.getElementById('imgs-preview');
+  c.innerHTML = '';
+  imagesUrls.forEach((url, i) => {
+    const div = document.createElement('div');
+    div.className = 'img-preview-item';
+    div.innerHTML = `<img src="${url}"/><button class="img-remove" onclick="retirerImage(${i})">×</button>`;
+    c.appendChild(div);
+  });
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn-add-img';
+  addBtn.textContent = '+';
+  addBtn.onclick = () => document.getElementById('fiche-img-input').focus();
+  c.appendChild(addBtn);
+}
+
+function retirerImage(i) {
+  imagesUrls.splice(i, 1);
+  renderImgsPreview();
+}
+
+async function sauvegarderFiche() {
+  const titre = document.getElementById('fiche-titre').value.trim();
+  if (!titre) { showToast('⚠️ Titre requis'); return; }
+
+  const donnees = {
+    titre,
+    theme: document.getElementById('fiche-theme').value,
+    profil_cible: document.getElementById('fiche-profil').value,
+    contenu: document.getElementById('fiche-contenu').value || null,
+    images_urls: imagesUrls.join('|') || null,
+    video_url: document.getElementById('fiche-video').value || null,
+  };
+
+  let error;
+  if (ficheEnEdition) {
+    ({ error } = await supabase.from('fiches').update(donnees).eq('id', ficheEnEdition.id));
+  } else {
+    ({ error } = await supabase.from('fiches').insert(donnees));
+  }
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  fermerModal('modal-fiche');
+  chargerFichesAdmin();
+  chargerDashboard();
+  showToast(ficheEnEdition ? '✅ Fiche modifiée !' : '✅ Fiche créée !');
+}
+
+async function supprimerFiche(id) {
+  if (!confirm('Supprimer cette fiche définitivement ?')) return;
+  await supabase.from('fiches').delete().eq('id', id);
+  chargerFichesAdmin();
+  showToast('🗑️ Fiche supprimée');
+}
+
+// ── Envoi fiche à un client ──
+function ouvrirEnvoiFiche(ficheId) {
+  ficheAEnvoyer = ficheId;
+  const c = document.getElementById('liste-clients-envoi');
+  c.innerHTML = '';
+  tousClients.forEach(client => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-outline btn-full';
+    btn.style.marginBottom = '8px';
+    btn.textContent = `${client.prenom} — ${client.nom_chien}`;
+    btn.onclick = () => envoyerFicheAClient(ficheId, client);
+    c.appendChild(btn);
+  });
+  document.getElementById('modal-envoyer-fiche').classList.add('open');
+}
+
+async function envoyerFicheAClient(ficheId, client) {
+  const { error } = await supabase.from('fiches_envoyees').insert({
+    user_id: client.id,
+    fiche_id: ficheId,
+    vue: false
+  });
+  if (error && error.code !== '23505') { showToast('❌ Erreur : ' + error.message); return; }
+  fermerModal('modal-envoyer-fiche');
+  showToast(`✅ Fiche envoyée à ${client.prenom} !`);
+}
+
+// ── Annonces ──
+async function chargerAnnonces() {
+  const { data } = await supabase.from('annonces').select('*').order('created_at', { ascending: false });
+  const c = document.getElementById('annonces-list');
+  if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucune annonce</div>'; return; }
+  c.innerHTML = '';
+  data.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'annonce-item';
+    const types = { fiche:'📚 Fiche', atelier:'🐾 Atelier', actualite:'📰 Actualité' };
+    div.innerHTML = `
+      <span class="annonce-type">${types[a.type_annonce] || a.type_annonce}</span>
+      <div class="annonce-titre">${a.titre}</div>
+      ${a.image_url ? `<img src="${a.image_url}" style="width:100%;border-radius:8px;margin:6px 0;max-height:120px;object-fit:cover"/>` : ''}
+      <div class="annonce-preview">${a.contenu.substring(0, 100)}${a.contenu.length > 100 ? '…' : ''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <div style="font-size:11px;color:#bbb">${new Date(a.created_at).toLocaleDateString('fr-FR')}</div>
+        <button class="btn-icon btn-del" onclick="supprimerAnnonce('${a.id}')">🗑️</button>
+      </div>`;
+    c.appendChild(div);
+  });
+}
+
+async function envoyerAnnonce() {
+  const titre = document.getElementById('annonce-titre').value.trim();
+  const contenu = document.getElementById('annonce-contenu').value.trim();
+  if (!titre || !contenu) { showToast('⚠️ Titre et message requis'); return; }
+
+  const { error } = await supabase.from('annonces').insert({
+    titre,
+    contenu,
+    image_url: document.getElementById('annonce-image').value || null,
+    type_annonce: document.getElementById('annonce-type').value,
+  });
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+
+  ['annonce-titre','annonce-contenu','annonce-image'].forEach(id => document.getElementById(id).value = '');
+  chargerAnnonces();
+  showToast('✅ Annonce publiée pour tous les clients !');
+}
+
+async function supprimerAnnonce(id) {
+  if (!confirm('Supprimer cette annonce ?')) return;
+  await supabase.from('annonces').delete().eq('id', id);
+  chargerAnnonces();
+  showToast('🗑️ Annonce supprimée');
+}
+
+// ── Modals ──
+function fermerModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Utilitaires ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 2800);
+}
+
+async function seDeconnecter() {
+  await supabase.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+init();
+</script>
+</body>
+</html>

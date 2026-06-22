@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mon Journal — The Dog Experience</title>
+  <meta name="theme-color" content="#2BBFB0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <link rel="apple-touch-icon" href="logo.png"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="config.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #2BBFB0;
+      color: #fff;
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header img { width: 36px; height: 36px; object-fit: contain; border-radius: 50%; background: #fff; }
+    .header-title { font-size: 15px; font-weight: 700; }
+    .header-sub { font-size: 12px; opacity: 0.85; }
+    .btn-deconnexion {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ── NAVIGATION ONGLETS ── */
+    .nav-tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid #e0e0e0;
+      overflow-x: auto;
+      position: sticky;
+      top: 64px;
+      z-index: 99;
+    }
+    .nav-tab {
+      flex: 1;
+      min-width: 70px;
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #999;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .nav-tab.active { color: #2BBFB0; border-bottom-color: #2BBFB0; }
+    .nav-tab .tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+    /* ── CONTENU ── */
+    .page { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* ── CARTES ── */
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2BBFB0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e8f8f7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── BANDEAUX ── */
+    .bandeau {
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .bandeau-message {
+      background: #fff0f0;
+      border-left: 4px solid #e05555;
+      color: #c0392b;
+    }
+    .bandeau-rdv {
+      background: #e8f8f7;
+      border-left: 4px solid #2BBFB0;
+      color: #1a7a72;
+    }
+    .bandeau-annonce {
+      background: #fef9e7;
+      border-left: 4px solid #F5C842;
+      color: #8a6d00;
+    }
+    .bandeau strong { display: block; margin-bottom: 4px; }
+
+    /* ── SÉLECTEUR DATE ── */
+    .date-selector {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 16px;
+    }
+    .date-btn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #e0e0e0;
+      background: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .date-btn .jour { font-weight: 700; font-size: 13px; display: block; }
+    .date-btn .mois { color: #999; font-size: 10px; }
+    .date-btn.active { background: #2BBFB0; border-color: #2BBFB0; color: #fff; }
+    .date-btn.active .mois { color: rgba(255,255,255,0.8); }
+
+    /* ── FORMULAIRE ── */
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 8px;
+      margin-top: 14px;
+    }
+    .form-label:first-child { margin-top: 0; }
+
+    /* États émotionnels */
+    .emotion-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .emotion-btn {
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1.5px solid #e0e0e0;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      color: #555;
+    }
+    .emotion-btn.selected-vert { background: #e8f8f0; border-color: #2ecc71; color: #27ae60; }
+    .emotion-btn.selected-jaune { background: #fef9e7; border-color: #F5C842; color: #b8960a; }
+    .emotion-btn.selected-orange { background: #fef0e7; border-color: #e67e22; color: #d35400; }
+    .emotion-btn.selected-rouge { background: #fff0f0; border-color: #e05555; color: #c0392b; }
+
+    /* Compteurs */
+    .compteur-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .compteur-row:last-child { border-bottom: none; }
+    .compteur-label { font-size: 13px; color: #444; }
+    .compteur-controls { display: flex; align-items: center; gap: 12px; }
+    .compteur-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-moins { background: #f0f0f0; color: #666; }
+    .btn-moins:hover { background: #e0e0e0; }
+    .btn-plus { background: #2BBFB0; color: #fff; }
+    .btn-plus:hover { background: #22a89a; }
+    .compteur-val { font-size: 18px; font-weight: 700; color: #1a1a1a; min-width: 28px; text-align: center; }
+
+    /* Toggle switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 13px; color: #444; flex: 1; padding-right: 10px; }
+    .toggle {
+      position: relative;
+      width: 44px; height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: #ccc;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .toggle input:checked + .toggle-slider { background: #2BBFB0; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* Choix multiples */
+    .choices-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .choice-btn {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #e0e0e0;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #555;
+    }
+    .choice-btn.selected { background: #e8f8f7; border-color: #2BBFB0; color: #2BBFB0; }
+    .choice-btn.selected-rouge { background: #fff0f0; border-color: #e05555; color: #e05555; }
+
+    /* Slider */
+    .slider-wrap { padding: 4px 0 8px; }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #2BBFB0;
+      height: 6px;
+    }
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+    .slider-val {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: #2BBFB0;
+      margin-top: 6px;
+    }
+
+    /* Textarea */
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1a1a1a;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: #2BBFB0; }
+
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 4px;
+    }
+    input:focus { border-color: #2BBFB0; }
+
+    /* Section masquable */
+    .section-toggle-btn {
+      width: 100%;
+      background: #f5f5f5;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      text-align: left;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-toggle-btn:hover { background: #ececec; }
+    .section-collapsible { display: none; }
+    .section-collapsible.open { display: block; }
+
+    /* Bouton enregistrer */
+    .btn-save {
+      width: 100%;
+      padding: 16px;
+      background: #2BBFB0;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .btn-save:hover { background: #22a89a; }
+    .btn-save:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ── MESSAGERIE ── */
+    .messages-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .msg-bubble {
+      max-width: 85%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .msg-admin {
+      background: #e8f8f7;
+      color: #1a1a1a;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .msg-client {
+      background: #2BBFB0;
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .msg-meta {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-top: 4px;
+    }
+    .msg-input-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .msg-input-wrap textarea {
+      flex: 1;
+      min-height: 60px;
+      margin: 0;
+    }
+    .btn-envoyer {
+      padding: 12px 16px;
+      background: #2BBFB0;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* ── RESSOURCES ── */
+    .filtres-wrap {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 14px;
+    }
+    .filtre-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #e0e0e0;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .filtre-btn.active { background: #2BBFB0; border-color: #2BBFB0; color: #fff; }
+
+    .fiche-card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .fiche-card:hover { transform: translateY(-2px); }
+    .fiche-img { width: 100%; height: 140px; object-fit: cover; }
+    .fiche-body { padding: 14px; }
+    .fiche-theme {
+      display: inline-block;
+      padding: 3px 10px;
+      background: #e8f8f7;
+      color: #2BBFB0;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .fiche-titre { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+    .fiche-nouvelle {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #F5C842;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    /* ── SANTÉ ── */
+    .symptomes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .symptome-btn {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1.5px solid #e0e0e0;
+      background: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      color: #555;
+    }
+    .symptome-btn.selected { background: #fff0f0; border-color: #e05555; color: #e05555; }
+
+    /* ── FORFAITS / RDV ── */
+    .forfait-card {
+      background: #e8f8f7;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .forfait-nom { font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+    .forfait-progress {
+      background: #c5ede9;
+      border-radius: 10px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .forfait-bar { height: 100%; background: #2BBFB0; border-radius: 10px; transition: width 0.3s; }
+    .forfait-info { font-size: 12px; color: #555; }
+
+    .rdv-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .rdv-item:last-child { border-bottom: none; }
+    .rdv-date-box {
+      background: #2BBFB0;
+      color: #fff;
+      border-radius: 10px;
+      padding: 8px 12px;
+      text-align: center;
+      min-width: 52px;
+      flex-shrink: 0;
+    }
+    .rdv-jour { font-size: 20px; font-weight: 700; line-height: 1; }
+    .rdv-mois { font-size: 10px; opacity: 0.85; text-transform: uppercase; }
+    .rdv-info .rdv-type { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+    .rdv-info .rdv-lieu { font-size: 12px; color: #888; margin-top: 2px; }
+    .rdv-info .rdv-note { font-size: 12px; color: #555; margin-top: 4px; font-style: italic; }
+
+    /* Notification badge */
+    .badge {
+      display: inline-block;
+      background: #e05555;
+      color: #fff;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      margin-left: 4px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.visible { opacity: 1; }
+
+    .vide { text-align: center; color: #bbb; font-size: 14px; padding: 24px 0; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <img src="https://i.imgur.com/rq4rDYi.png" alt="TDE"/>
+    <div>
+      <div class="header-title" id="header-prenom">Mon journal</div>
+      <div class="header-sub" id="header-chien">The Dog Experience</div>
+    </div>
+  </div>
+  <button class="btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="afficherPage('journal')" id="tab-journal">
+    <span class="tab-icon">📓</span>Journal
+  </div>
+  <div class="nav-tab" onclick="afficherPage('messages')" id="tab-messages">
+    <span class="tab-icon">💬</span>Messages<span class="badge" id="badge-msg" style="display:none">0</span>
+  </div>
+  <div class="nav-tab" onclick="afficherPage('ressources')" id="tab-ressources">
+    <span class="tab-icon">📚</span>Ressources
+  </div>
+  <div class="nav-tab" onclick="afficherPage('sante')" id="tab-sante">
+    <span class="tab-icon">🏥</span>Santé
+  </div>
+  <div class="nav-tab" onclick="afficherPage('suivi')" id="tab-suivi">
+    <span class="tab-icon">📅</span>Suivi
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE JOURNAL
+══════════════════════════════════════════════ -->
+<div class="page active" id="page-journal">
+
+  <!-- Bandeaux -->
+  <div id="bandeaux-container" style="padding-top:12px"></div>
+
+  <div class="card">
+    <div class="card-title">📅 Sélectionne la date</div>
+    <div class="date-selector" id="date-selector"></div>
+  </div>
+
+  <!-- État humain -->
+  <div class="card">
+    <div class="card-title">🧑 Comment tu te sens aujourd'hui ?</div>
+    <div class="emotion-grid">
+      <button class="emotion-btn" onclick="selectEmotion('humain','serein',this)" data-val="serein">😌 Serein(e)</button>
+      <button class="emotion-btn" onclick="selectEmotion('humain','fatigue',this)" data-val="fatigue">😴 Fatigué(e)</button>
+      <button class="emotion-btn" onclick="selectEmotion('humain','stresse',this)" data-val="stresse">😰 Stressé(e)</button>
+      <button class="emotion-btn" onclick="selectEmotion('humain','surcharge',this)" data-val="surcharge">🤯 En surcharge</button>
+      <button class="emotion-btn" onclick="selectEmotion('humain','decouvrage',this)" data-val="decouvrage">😔 Découragé(e)</button>
+      <button class="emotion-btn" onclick="selectEmotion('humain','bien',this)" data-val="bien">😊 Bien</button>
+    </div>
+    <label class="form-label" style="margin-top:12px">Note libre (facultatif)</label>
+    <textarea id="humain_note" placeholder="Contexte de ta journée…" rows="2"></textarea>
+  </div>
+
+  <!-- SECTION CHIOT -->
+  <div id="section-chiot" style="display:none">
+    <div class="card">
+      <div class="card-title">🐶 Journal Chiot</div>
+
+      <label class="form-label">Comment va <span class="chien-nom-label">ton chien</span> aujourd'hui ?</label>
+      <div class="emotion-grid">
+        <button class="emotion-btn" onclick="selectEmotion('humeur','tres_bien',this)">🌟 Très bien</button>
+        <button class="emotion-btn" onclick="selectEmotion('humeur','bien',this)">😊 Bien</button>
+        <button class="emotion-btn" onclick="selectEmotion('humeur','moyen',this)">😐 Moyen</button>
+        <button class="emotion-btn" onclick="selectEmotion('humeur','difficile',this)">😟 Difficile</button>
+      </div>
+
+      <label class="form-label">Énergie en fin de journée</label>
+      <div class="choices-wrap">
+        <button class="choice-btn" onclick="selectChoice('energie','epuise',this)">😴 Épuisé</button>
+        <button class="choice-btn" onclick="selectChoice('energie','equilibre',this)">⚖️ Équilibré</button>
+        <button class="choice-btn" onclick="selectChoice('energie','survolte',this)">⚡ Survolté</button>
+      </div>
+
+      <label class="form-label">Sommeil</label>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Heures nuit</div>
+          <input type="number" id="heures_nuit" min="0" max="24" step="0.5" placeholder="ex: 7"/>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Heures siestes</div>
+          <input type="number" id="heures_siestes" min="0" max="12" step="0.5" placeholder="ex: 2"/>
+        </div>
+      </div>
+
+      <label class="form-label">Rencontres</label>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Sorties</div>
+          <input type="number" id="sorties" min="0" max="20" placeholder="0"/>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Humains</div>
+          <input type="number" id="humains_rencontres" min="0" placeholder="0"/>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Chiens</div>
+          <input type="number" id="chiens_rencontres" min="0" placeholder="0"/>
+        </div>
+      </div>
+
+      <div class="toggle-row" style="margin-top:10px">
+        <span class="toggle-label">Dort avec le chiot</span>
+        <label class="toggle"><input type="checkbox" id="dort_avec_chiot"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Travail de la solitude en cours</span>
+        <label class="toggle"><input type="checkbox" id="solitude_en_cours" onchange="toggleSolitudeDuree()"/><span class="toggle-slider"></span></label>
+      </div>
+      <div id="solitude-duree-wrap" style="display:none;padding:8px 0">
+        <input type="number" id="solitude_duree" placeholder="Durée en minutes"/>
+      </div>
+
+      <button class="section-toggle-btn" onclick="toggleSection('comportements-chiot')">
+        Comportements <span>▼</span>
+      </button>
+      <div class="section-collapsible" id="comportements-chiot">
+        <label class="form-label">Propreté</label>
+        <div class="choices-wrap">
+          <button class="choice-btn" onclick="selectChoice('proprete','aucun',this)">✅ Aucun accident</button>
+          <button class="choice-btn" onclick="selectChoice('proprete','un_peu',this)">🟡 1-2 accidents</button>
+          <button class="choice-btn" onclick="selectChoice('proprete','beaucoup',this)">🔴 Plusieurs</button>
+        </div>
+
+        <label class="form-label">Destruction</label>
+        <div class="choices-wrap">
+          <button class="choice-btn" onclick="selectChoice('destruction_chiot','aucun',this)">✅ Aucune</button>
+          <button class="choice-btn" onclick="selectChoice('destruction_chiot','un_peu',this)">🟡 Un peu</button>
+          <button class="choice-btn" onclick="selectChoice('destruction_chiot','beaucoup',this)">🔴 Beaucoup</button>
+        </div>
+
+        <label class="form-label">Mordillements</label>
+        <div class="choices-wrap">
+          <button class="choice-btn" onclick="selectChoice('mordillements','aucun',this)">✅ Aucun</button>
+          <button class="choice-btn" onclick="selectChoice('mordillements','un_peu',this)">🟡 Un peu</button>
+          <button class="choice-btn" onclick="selectChoice('mordillements','beaucoup',this)">🔴 Beaucoup</button>
+        </div>
+        <div id="mordillements-contexte" style="display:none;margin-top:8px">
+          <label class="form-label">Contexte des mordillements</label>
+          <div class="choices-wrap">
+            <button class="choice-btn" onclick="selectChoice('contexte_mordillements','jeu',this)">Pendant le jeu</button>
+            <button class="choice-btn" onclick="selectChoice('contexte_mordillements','calme',this)">Au calme</button>
+            <button class="choice-btn" onclick="selectChoice('contexte_mordillements','frustration',this)">Frustration</button>
+          </div>
+        </div>
+
+        <label class="form-label">Sauts sur les humains</label>
+        <div class="choices-wrap">
+          <button class="choice-btn" onclick="selectChoice('sauts','aucun',this)">✅ Aucun</button>
+          <button class="choice-btn" onclick="selectChoice('sauts','un_peu',this)">🟡 Un peu</button>
+          <button class="choice-btn" onclick="selectChoice('sauts','beaucoup',this)">🔴 Beaucoup</button>
+        </div>
+      </div>
+
+      <label class="form-label">Activités du jour</label>
+      <div class="choices-wrap">
+        <button class="choice-btn" onclick="toggleMulti('activites','promenade',this)">🦮 Promenade</button>
+        <button class="choice-btn" onclick="toggleMulti('activites','jeu',this)">🎾 Jeu</button>
+        <button class="choice-btn" onclick="toggleMulti('activites','olfaction',this)">👃 Olfaction</button>
+        <button class="choice-btn" onclick="toggleMulti('activites','apprentissage',this)">🎓 Apprentissage</button>
+        <button class="choice-btn" onclick="toggleMulti('activites','repos',this)">😴 Repos</button>
+        <button class="choice-btn" onclick="toggleMulti('activites','bain',this)">🛁 Bain</button>
+      </div>
+
+      <label class="form-label">Nouvelles découvertes</label>
+      <div class="choices-wrap">
+        <button class="choice-btn" onclick="toggleMulti('decouvertes','voiture',this)">🚗 Voiture</button>
+        <button class="choice-btn" onclick="toggleMulti('decouvertes','velo',this)">🚲 Vélo</button>
+        <button class="choice-btn" onclick="toggleMulti('decouvertes','enfants',this)">👶 Enfants</button>
+        <button class="choice-btn" onclick="toggleMulti('decouvertes','animaux',this)">🐱 Autres animaux</button>
+        <button class="choice-btn" onclick="toggleMulti('decouvertes','bruits',this)">🔊 Bruits</button>
+        <button class="choice-btn" onclick="toggleMulti('decouvertes','foule',this)">👥 Foule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION SENSIBLE -->
+  <div id="section-sensible" style="display:none">
+    <div class="card">
+      <div class="card-title">🌸 Journal Chien Sensible</div>
+
+      <label class="form-label">Émotion de <span class="chien-nom-label">ton chien</span> à la maison</label>
+      <div class="emotion-grid">
+        <button class="emotion-btn" onclick="selectEmotion('emotion_maison','serein',this)">😌 Serein</button>
+        <button class="emotion-btn" onclick="selectEmotion('emotion_maison','peu_tendu',this)">😕 Peu tendu</button>
+        <button class="emotion-btn" onclick="selectEmotion('emotion_maison','stresse',this)">😰 Stressé</button>
+        <button class="emotion-btn" onclick="selectEmotion('emotion_maison','anxieux',this)">😱 Anxieux</button>
+      </div>
+
+      <label class="form-label">Émotion à l'extérieur</label>
+      <div class="emotion-grid">
+        <button class="emotion-btn" onclick="selectEmotion('emotion_exterieur','serein',this)">😌 Serein</button>
+        <button class="emotion-btn" onclick="selectEmotion('emotion_exterieur','peu_tendu',this)">😕 Peu tendu</button>
+        <button class="emotion-btn" onclick="selectEmotion('emotion_exterieur','stresse',this)">😰 Stressé</button>
+        <button class="emotion-btn" onclick="selectEmotion('emotion_exterieur','anxieux',this)">😱 Anxieux</button>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Mise au vert (pas de sortie)</span>
+        <label class="toggle"><input type="checkbox" id="mise_au_vert"/><span class="toggle-slider"></span></label>
+      </div>
+
+      <label class="form-label">Charge allostatique estimée</label>
+      <div class="slider-wrap">
+        <input type="range" id="charge_allostatique" min="0" max="10" value="0"
+               oninput="document.getElementById('charge-val').textContent=this.value"/>
+        <div class="slider-labels"><span>0 — Vide</span><span>10 — Débordement</span></div>
+        <div class="slider-val" id="charge-val">0</div>
+      </div>
+
+      <label class="form-label">Stimuli rencontrés</label>
+      <div class="compteur-row">
+        <span class="compteur-label">Nombre de stimuli</span>
+        <div class="compteur-controls">
+          <button class="compteur-btn btn-moins" onclick="modifCompteur('stimuli_sensible',-1)">−</button>
+          <span class="compteur-val" id="val-stimuli_sensible">0</span>
+          <button class="compteur-btn btn-plus" onclick="modifCompteur('stimuli_sensible',1)">+</button>
+        </div>
+      </div>
+
+      <button class="section-toggle-btn" onclick="toggleSection('comportements-sensible')">
+        Comportements sensible <span>▼</span>
+      </button>
+      <div class="section-collapsible" id="comportements-sensible">
+        <div class="toggle-row">
+          <span class="toggle-label">Anxiété de séparation</span>
+          <label class="toggle"><input type="checkbox" id="anxiete_separation" onchange="toggleAnxieteNote()"/><span class="toggle-slider"></span></label>
+        </div>
+        <div id="anxiete-note-wrap" style="display:none;padding:6px 0">
+          <textarea id="anxiete_separation_note" placeholder="Décris ce que tu as observé…" rows="2"></textarea>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Hypervigilance</span>
+          <label class="toggle"><input type="checkbox" id="hypervigileance"/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Inhibition / blocages</span>
+          <label class="toggle"><input type="checkbox" id="inhibition"/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Malpropreté</span>
+          <label class="toggle"><input type="checkbox" id="malproprete"/><span class="toggle-slider"></span></label>
+        </div>
+
+        <label class="form-label" style="margin-top:10px">Destruction</label>
+        <div class="choices-wrap">
+          <button class="choice-btn" onclick="selectChoice('destruction_sensible','aucun',this)">✅ Aucune</button>
+          <button class="choice-btn" onclick="selectChoice('destruction_sensible','un_peu',this)">🟡 Un peu</button>
+          <button class="choice-btn" onclick="selectChoice('destruction_sensible','beaucoup',this)">🔴 Beaucoup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION RÉACTIF -->
+  <div id="section-reactif" style="display:none">
+    <div class="card">
+      <div class="card-title">⚡ Journal Chien Réactif</div>
+
+      <label class="form-label">Déclenchements par type</label>
+      <div id="declencheurs-compteurs"></div>
+
+      <label class="form-label" style="margin-top:10px">Aboiements</label>
+      <div class="compteur-row">
+        <span class="compteur-label">Nombre d'aboiements</span>
+        <div class="compteur-controls">
+          <button class="compteur-btn btn-moins" onclick="modifCompteur('aboiements',-1)">−</button>
+          <span class="compteur-val" id="val-aboiements">0</span>
+          <button class="compteur-btn btn-plus" onclick="modifCompteur('aboiements',1)">+</button>
+        </div>
+      </div>
+
+      <label class="form-label">Intensité de la réaction</label>
+      <div class="choices-wrap">
+        <button class="choice-btn" onclick="selectChoice('intensite_reaction','faible',this)">🟢 Faible</button>
+        <button class="choice-btn" onclick="selectChoice('intensite_reaction','modere',this)">🟡 Modérée</button>
+        <button class="choice-btn" onclick="selectChoice('intensite_reaction','intense',this)">🟠 Intense</button>
+        <button class="choice-btn" onclick="selectChoice('intensite_reaction','tres_intense',this)">🔴 Très intense</button>
+      </div>
+
+      <div class="toggle-row" style="margin-top:10px">
+        <span class="toggle-label">Mise au vert (pas de sortie)</span>
+        <label class="toggle"><input type="checkbox" id="mise_au_vert_reactif"/><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note libre commune -->
+  <div class="card">
+    <div class="card-title">📝 Note libre</div>
+    <textarea id="note_libre" placeholder="Observations, questions, événements particuliers…" rows="3"></textarea>
+  </div>
+
+  <button class="btn-save" onclick="enregistrerJournal()" id="btn-save">
+    ✅ Enregistrer la journée
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE MESSAGES
+══════════════════════════════════════════════ -->
+<div class="page" id="page-messages">
+  <div style="padding-top:12px">
+    <div class="card">
+      <div class="card-title">💬 Messages avec Laëtitia</div>
+      <div class="messages-list" id="messages-list">
+        <div class="vide">Aucun message pour l'instant</div>
+      </div>
+      <div class="msg-input-wrap">
+        <textarea id="msg-input" placeholder="Écris ton message…"></textarea>
+        <button class="btn-envoyer" onclick="envoyerMessage()">Envoyer</button>
+      </div>
+    </div>
+
+    <!-- Annonces -->
+    <div class="card" id="annonces-card" style="display:none">
+      <div class="card-title">📣 Actualités</div>
+      <div id="annonces-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE RESSOURCES
+══════════════════════════════════════════════ -->
+<div class="page" id="page-ressources">
+  <div style="padding-top:12px">
+    <div class="filtres-wrap" id="filtres-ressources">
+      <button class="filtre-btn active" onclick="filtrerFiches('tous',this)">Toutes</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Lien',this)">Lien</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Comportement',this)">Comportement</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Sommeil',this)">Sommeil</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Socialisation',this)">Socialisation</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Réactivité',this)">Réactivité</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Sensibilité',this)">Sensibilité</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Santé',this)">Santé</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Quotidien',this)">Quotidien</button>
+    </div>
+    <div id="fiches-list"><div class="vide">Aucune fiche disponible pour l'instant</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE SANTÉ
+══════════════════════════════════════════════ -->
+<div class="page" id="page-sante">
+  <div style="padding-top:12px">
+    <div class="card">
+      <div class="card-title">🏥 Suivi Santé</div>
+
+      <div class="date-selector" id="date-selector-sante" style="margin-bottom:14px"></div>
+
+      <label class="form-label">Symptômes observés</label>
+      <div class="symptomes-grid">
+        <button class="symptome-btn" onclick="toggleSymptome('boiterie',this)">🦵 Boiterie</button>
+        <button class="symptome-btn" onclick="toggleSymptome('grattage',this)">✋ Grattage</button>
+        <button class="symptome-btn" onclick="toggleSymptome('vomissement',this)">🤢 Vomissement</button>
+        <button class="symptome-btn" onclick="toggleSymptome('diarrhee',this)">💩 Diarrhée</button>
+        <button class="symptome-btn" onclick="toggleSymptome('perte_appetit',this)">🍽️ Perte d'appétit</button>
+        <button class="symptome-btn" onclick="toggleSymptome('fatigue',this)">😴 Fatigue anormale</button>
+        <button class="symptome-btn" onclick="toggleSymptome('yeux',this)">👁️ Yeux</button>
+        <button class="symptome-btn" onclick="toggleSymptome('oreilles',this)">👂 Oreilles</button>
+        <button class="symptome-btn" onclick="toggleSymptome('peau',this)">🩹 Peau/poils</button>
+        <button class="symptome-btn" onclick="toggleSymptome('agitation',this)">😵 Agitation</button>
+      </div>
+
+      <label class="form-label">Description des symptômes</label>
+      <textarea id="symptomes_note" placeholder="Décris ce que tu observes…" rows="2"></textarea>
+
+      <button class="section-toggle-btn" onclick="toggleSection('traitement-section')" style="margin-top:12px">
+        Traitement en cours <span>▼</span>
+      </button>
+      <div class="section-collapsible" id="traitement-section">
+        <label class="form-label">Nom du traitement / médicament</label>
+        <input type="text" id="traitement_nom" placeholder="ex: Frontline, Apoquel…"/>
+        <label class="form-label">Dosage</label>
+        <input type="text" id="traitement_dose" placeholder="ex: 1 comprimé/jour"/>
+        <label class="form-label">Du</label>
+        <input type="date" id="traitement_debut" style="margin-bottom:8px"/>
+        <label class="form-label">Au</label>
+        <input type="date" id="traitement_fin" style="margin-bottom:8px"/>
+        <label class="form-label">Note</label>
+        <textarea id="traitement_note" placeholder="Prescrit par…" rows="2"></textarea>
+      </div>
+
+      <label class="form-label" style="margin-top:12px">Note générale santé</label>
+      <textarea id="note_sante" placeholder="RDV vétérinaire, observations générales…" rows="2"></textarea>
+
+      <button class="btn-save" onclick="enregistrerSante()" style="margin-top:16px">
+        ✅ Enregistrer
+      </button>
+    </div>
+
+    <!-- Historique santé -->
+    <div class="card">
+      <div class="card-title">📋 Historique santé</div>
+      <div id="historique-sante"><div class="vide">Aucune entrée santé</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE SUIVI (RDV + FORFAITS)
+══════════════════════════════════════════════ -->
+<div class="page" id="page-suivi">
+  <div style="padding-top:12px">
+    <div class="card">
+      <div class="card-title">📅 Prochains rendez-vous</div>
+      <div id="rdv-list"><div class="vide">Aucun rendez-vous planifié</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎟️ Mes forfaits</div>
+      <div id="forfaits-list"><div class="vide">Aucun forfait actif</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Variables globales ──
+let profil = {};
+let userId = null;
+let userEmail = null;
+let dateSelectionnee = new Date().toISOString().split('T')[0];
+let dateSelectionneeS = new Date().toISOString().split('T')[0];
+let donnees = {}; // valeurs du formulaire
+let symptomesActifs = new Set();
+let multiSelects = { activites: new Set(), decouvertes: new Set() };
+let compteurs = { stimuli_sensible: 0, aboiements: 0 };
+let compteursDecl = {};
+let fichesToutes = [];
+let messagesList = [];
+
+// ── Init ──
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+async function init() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) { window.location.href = 'index.html'; return; }
+  userId = user.id;
+  userEmail = user.email;
+
+  const { data: p } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  if (!p) { window.location.href = 'index.html'; return; }
+  profil = p;
+
+  // Header
+  document.getElementById('header-prenom').textContent = p.prenom;
+  document.getElementById('header-chien').textContent = p.nom_chien + ' — The Dog Experience';
+  document.querySelectorAll('.chien-nom-label').forEach(el => el.textContent = p.nom_chien);
+
+  // Afficher sections selon profil
+  if (p.suivi_chiot) document.getElementById('section-chiot').style.display = 'block';
+  if (p.suivi_sensible) document.getElementById('section-sensible').style.display = 'block';
+  if (p.suivi_reactif) {
+    document.getElementById('section-reactif').style.display = 'block';
+    genererCompteursDecl(p);
+  }
+
+  // Calendrier
+  genererDateSelector('date-selector', dateSelectionnee, (d) => { dateSelectionnee = d; chargerJournal(); });
+  genererDateSelector('date-selector-sante', dateSelectionneeS, (d) => { dateSelectionneeS = d; chargerHistoriqueSante(); });
+
+  chargerBandeaux();
+  chargerJournal();
+  chargerMessages();
+  chargerFiches();
+  chargerSante();
+  chargerRdvForfaits();
+  verifierMessagesNonLus();
+}
+
+// ── Navigation ──
+function afficherPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('tab-' + page).classList.add('active');
+}
+
+// ── Calendrier ──
+function genererDateSelector(containerId, dateActive, callback) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const moisFR = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const iso = d.toISOString().split('T')[0];
+    const btn = document.createElement('div');
+    btn.className = 'date-btn' + (iso === dateActive ? ' active' : '');
+    btn.innerHTML = `<span class="jour">${d.getDate()}</span><span class="mois">${moisFR[d.getMonth()]}</span>`;
+    btn.onclick = () => {
+      container.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      callback(iso);
+    };
+    container.appendChild(btn);
+  }
+}
+
+// ── Déclencheurs réactivité ──
+function genererCompteursDecl(p) {
+  const wrap = document.getElementById('declencheurs-compteurs');
+  wrap.innerHTML = '';
+  const declencheurs = [
+    { key: 'chiens', label: '🐕 Chiens', actif: p.declencheur_chiens },
+    { key: 'humains', label: '🧍 Humains', actif: p.declencheur_humains },
+    { key: 'voitures', label: '🚗 Voitures', actif: p.declencheur_voitures },
+    { key: 'velos', label: '🚲 Vélos', actif: p.declencheur_velos },
+    { key: 'joggers', label: '🏃 Joggers', actif: p.declencheur_joggers },
+    { key: 'bruits', label: '🔊 Bruits', actif: p.declencheur_bruits },
+  ];
+  declencheurs.forEach(d => {
+    if (!d.actif) return;
+    compteursDecl[d.key] = 0;
+    const row = document.createElement('div');
+    row.className = 'compteur-row';
+    row.innerHTML = `
+      <span class="compteur-label">${d.label}</span>
+      <div class="compteur-controls">
+        <button class="compteur-btn btn-moins" onclick="modifCompteurDecl('${d.key}',-1)">−</button>
+        <span class="compteur-val" id="val-decl-${d.key}">0</span>
+        <button class="compteur-btn btn-plus" onclick="modifCompteurDecl('${d.key}',1)">+</button>
+      </div>`;
+    wrap.appendChild(row);
+  });
+  // Champ "autres" si renseigné
+  if (p.declencheur_autres) {
+    compteursDecl['autres'] = 0;
+    const row = document.createElement('div');
+    row.className = 'compteur-row';
+    row.innerHTML = `
+      <span class="compteur-label">✏️ ${p.declencheur_autres}</span>
+      <div class="compteur-controls">
+        <button class="compteur-btn btn-moins" onclick="modifCompteurDecl('autres',-1)">−</button>
+        <span class="compteur-val" id="val-decl-autres">0</span>
+        <button class="compteur-btn btn-plus" onclick="modifCompteurDecl('autres',1)">+</button>
+      </div>`;
+    wrap.appendChild(row);
+  }
+}
+
+// ── Sélections formulaire ──
+function selectEmotion(champ, val, btn) {
+  const parent = btn.closest('.emotion-grid');
+  parent.querySelectorAll('.emotion-btn').forEach(b => b.className = 'emotion-btn');
+  const classes = { serein:'selected-vert', bien:'selected-vert', tres_bien:'selected-vert',
+                    fatigue:'selected-jaune', peu_tendu:'selected-jaune', equilibre:'selected-jaune',
+                    stresse:'selected-orange', moyen:'selected-orange',
+                    anxieux:'selected-rouge', difficile:'selected-rouge',
+                    surcharge:'selected-rouge', decouvrage:'selected-rouge', colere:'selected-rouge' };
+  btn.classList.add(classes[val] || 'selected-vert');
+  donnees[champ] = val;
+}
+
+function selectChoice(champ, val, btn) {
+  const parent = btn.closest('.choices-wrap');
+  parent.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected','selected-rouge'));
+  btn.classList.add(['beaucoup','intense','tres_intense'].includes(val) ? 'selected-rouge' : 'selected');
+  donnees[champ] = val;
+  if (champ === 'mordillements') {
+    document.getElementById('mordillements-contexte').style.display = val !== 'aucun' ? 'block' : 'none';
+  }
+}
+
+function toggleMulti(champ, val, btn) {
+  if (!multiSelects[champ]) multiSelects[champ] = new Set();
+  if (multiSelects[champ].has(val)) {
+    multiSelects[champ].delete(val);
+    btn.classList.remove('selected');
+  } else {
+    multiSelects[champ].add(val);
+    btn.classList.add('selected');
+  }
+}
+
+function modifCompteur(champ, delta) {
+  compteurs[champ] = Math.max(0, (compteurs[champ] || 0) + delta);
+  document.getElementById('val-' + champ).textContent = compteurs[champ];
+}
+
+function modifCompteurDecl(key, delta) {
+  compteursDecl[key] = Math.max(0, (compteursDecl[key] || 0) + delta);
+  document.getElementById('val-decl-' + key).textContent = compteursDecl[key];
+}
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  const btn = el.previousElementSibling;
+  el.classList.toggle('open');
+  btn.querySelector('span:last-child').textContent = el.classList.contains('open') ? '▲' : '▼';
+}
+
+function toggleSolitudeDuree() {
+  document.getElementById('solitude-duree-wrap').style.display =
+    document.getElementById('solitude_en_cours').checked ? 'block' : 'none';
+}
+function toggleAnxieteNote() {
+  document.getElementById('anxiete-note-wrap').style.display =
+    document.getElementById('anxiete_separation').checked ? 'block' : 'none';
+}
+function toggleSymptome(val, btn) {
+  if (symptomesActifs.has(val)) { symptomesActifs.delete(val); btn.classList.remove('selected'); }
+  else { symptomesActifs.add(val); btn.classList.add('selected'); }
+}
+
+// ── Bandeaux ──
+async function chargerBandeaux() {
+  const container = document.getElementById('bandeaux-container');
+  container.innerHTML = '';
+
+  // Messages non lus
+  const { data: msgs } = await supabase.from('messages')
+    .select('*').eq('user_id', userId).eq('expediteur','admin').eq('lu', false);
+  if (msgs && msgs.length > 0) {
+    const b = document.createElement('div');
+    b.className = 'bandeau bandeau-message';
+    b.innerHTML = `<strong>💬 ${msgs.length} nouveau${msgs.length > 1 ? 'x' : ''} message${msgs.length > 1 ? 's' : ''} de Laëtitia</strong>
+      <span style="cursor:pointer;text-decoration:underline" onclick="afficherPage('messages')">Voir →</span>`;
+    container.appendChild(b);
+  }
+
+  // Prochain RDV
+  const now = new Date().toISOString();
+  const { data: rdvs } = await supabase.from('rendez_vous')
+    .select('*').eq('user_id', userId).gte('date_rdv', now).order('date_rdv').limit(1);
+  if (rdvs && rdvs.length > 0) {
+    const rdv = rdvs[0];
+    const d = new Date(rdv.date_rdv);
+    const b = document.createElement('div');
+    b.className = 'bandeau bandeau-rdv';
+    b.innerHTML = `<strong>📅 Prochain RDV — ${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</strong>
+      ${rdv.type_rdv}${rdv.lieu ? ' · ' + rdv.lieu : ''}`;
+    container.appendChild(b);
+  }
+
+  // Annonces
+  const { data: annonces } = await supabase.from('annonces').select('*').order('created_at',{ascending:false}).limit(2);
+  if (annonces && annonces.length > 0) {
+    annonces.forEach(a => {
+      const b = document.createElement('div');
+      b.className = 'bandeau bandeau-annonce';
+      b.innerHTML = `<strong>📣 ${a.titre}</strong>${a.contenu.substring(0,80)}…
+        <span style="cursor:pointer;text-decoration:underline" onclick="afficherPage('messages')"> Voir →</span>`;
+      container.appendChild(b);
+    });
+  }
+}
+
+// ── Journal ──
+async function chargerJournal() {
+  const { data } = await supabase.from('journal')
+    .select('*').eq('user_id', userId).eq('date', dateSelectionnee).single();
+  if (data) {
+    donnees = { ...data };
+    // Remplir les champs visuels
+    if (data.humain_etat) {
+      const btn = document.querySelector(`[data-val="${data.humain_etat}"]`);
+      if (btn) { const ev = { closest: (s) => btn.closest(s) }; selectEmotion('humain_etat', data.humain_etat, btn); }
+    }
+    if (data.note_libre) document.getElementById('note_libre').value = data.note_libre;
+    if (data.humain_note) document.getElementById('humain_note').value = data.humain_note;
+    if (data.charge_allostatique !== null && data.charge_allostatique !== undefined) {
+      document.getElementById('charge_allostatique').value = data.charge_allostatique;
+      document.getElementById('charge-val').textContent = data.charge_allostatique;
+    }
+    if (data.stimuli_sensible) { compteurs.stimuli_sensible = data.stimuli_sensible; document.getElementById('val-stimuli_sensible').textContent = data.stimuli_sensible; }
+    if (data.aboiements) { compteurs.aboiements = data.aboiements; document.getElementById('val-aboiements').textContent = data.aboiements; }
+  } else {
+    donnees = {};
+    document.getElementById('note_libre').value = '';
+    document.getElementById('humain_note').value = '';
+    compteurs = { stimuli_sensible: 0, aboiements: 0 };
+    if (document.getElementById('val-stimuli_sensible')) document.getElementById('val-stimuli_sensible').textContent = 0;
+    if (document.getElementById('val-aboiements')) document.getElementById('val-aboiements').textContent = 0;
+    if (document.getElementById('charge_allostatique')) {
+      document.getElementById('charge_allostatique').value = 0;
+      document.getElementById('charge-val').textContent = 0;
+    }
+  }
+}
+
+async function enregistrerJournal() {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+  const entree = {
+    user_id: userId,
+    date: dateSelectionnee,
+    humain_etat: donnees.humain_etat || null,
+    humain_note_libre: document.getElementById('humain_note').value || null,
+    note_libre: document.getElementById('note_libre').value || null,
+    // Chiot
+    humeur: donnees.humeur || null,
+    energie_fin_journee: donnees.energie || null,
+    heures_nuit: parseFloat(document.getElementById('heures_nuit')?.value) || null,
+    heures_siestes: parseFloat(document.getElementById('heures_siestes')?.value) || null,
+    sorties: parseInt(document.getElementById('sorties')?.value) || null,
+    humains_rencontres: parseInt(document.getElementById('humains_rencontres')?.value) || null,
+    chiens_rencontres: parseInt(document.getElementById('chiens_rencontres')?.value) || null,
+    dort_avec_chiot: document.getElementById('dort_avec_chiot')?.checked || false,
+    solitude_en_cours: document.getElementById('solitude_en_cours')?.checked || false,
+    solitude_duree: parseInt(document.getElementById('solitude_duree')?.value) || null,
+    proprete: donnees.proprete || null,
+    destruction_chiot: donnees.destruction_chiot || null,
+    mordillements: donnees.mordillements || null,
+    contexte_mordillements: donnees.contexte_mordillements || null,
+    sauts: donnees.sauts || null,
+    activites: multiSelects.activites.size > 0 ? [...multiSelects.activites].join(', ') : null,
+    decouvertes: multiSelects.decouvertes.size > 0 ? [...multiSelects.decouvertes].join(', ') : null,
+    // Sensible
+    emotion_maison: donnees.emotion_maison || null,
+    emotion_exterieur: donnees.emotion_exterieur || null,
+    mise_au_vert: document.getElementById('mise_au_vert')?.checked || false,
+    charge_allostatique: parseInt(document.getElementById('charge_allostatique')?.value) || 0,
+    stimuli_sensible: compteurs.stimuli_sensible,
+    anxiete_separation: document.getElementById('anxiete_separation')?.checked || false,
+    anxiete_separation_note: document.getElementById('anxiete_separation_note')?.value || null,
+    hypervigileance: document.getElementById('hypervigileance')?.checked || false,
+    inhibition: document.getElementById('inhibition')?.checked || false,
+    malproprete: document.getElementById('malproprete')?.checked || false,
+    destruction_sensible: donnees.destruction_sensible || null,
+    // Réactif
+    aboiements: compteurs.aboiements,
+    intensite_reaction: donnees.intensite_reaction || null,
+    mise_au_vert: document.getElementById('mise_au_vert_reactif')?.checked || document.getElementById('mise_au_vert')?.checked || false,
+    decl_chiens: compteursDecl.chiens ?? null,
+    decl_humains: compteursDecl.humains ?? null,
+    decl_voitures: compteursDecl.voitures ?? null,
+    decl_velos: compteursDecl.velos ?? null,
+    decl_bruits: compteursDecl.bruits ?? null,
+    decl_autres_count: compteursDecl.autres ?? null,
+  };
+
+  const { error } = await supabase.from('journal').upsert(entree, { onConflict: 'user_id,date' });
+
+  btn.disabled = false; btn.textContent = '✅ Enregistrer la journée';
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  showToast('✅ Journée enregistrée !');
+}
+
+// ── Messages ──
+async function chargerMessages() {
+  const { data } = await supabase.from('messages')
+    .select('*').eq('user_id', userId).order('created_at');
+  if (!data) return;
+  messagesList = data;
+
+  // Marquer admin messages comme lus
+  const nonLus = data.filter(m => m.expediteur === 'admin' && !m.lu).map(m => m.id);
+  if (nonLus.length > 0) {
+    await supabase.from('messages').update({ lu: true }).in('id', nonLus);
+    document.getElementById('badge-msg').style.display = 'none';
+  }
+
+  const list = document.getElementById('messages-list');
+  if (data.length === 0) { list.innerHTML = '<div class="vide">Aucun message pour l\'instant</div>'; return; }
+  list.innerHTML = '';
+  data.forEach(m => {
+    const div = document.createElement('div');
+    div.style.display = 'flex';
+    div.style.flexDirection = 'column';
+    div.style.alignItems = m.expediteur === 'admin' ? 'flex-start' : 'flex-end';
+    const d = new Date(m.created_at);
+    div.innerHTML = `
+      <div class="msg-bubble msg-${m.expediteur === 'admin' ? 'admin' : 'client'}">
+        ${m.contenu}
+        ${m.image_url ? `<br/><img src="${m.image_url}" style="max-width:200px;border-radius:8px;margin-top:8px"/>` : ''}
+      </div>
+      <div class="msg-meta" style="margin-${m.expediteur==='admin'?'left':'right'}:8px">
+        ${m.expediteur === 'admin' ? 'Laëtitia' : 'Vous'} · ${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+      </div>`;
+    list.appendChild(div);
+  });
+  list.scrollTop = list.scrollHeight;
+
+  // Annonces
+  const { data: annonces } = await supabase.from('annonces').select('*').order('created_at',{ascending:false});
+  if (annonces && annonces.length > 0) {
+    document.getElementById('annonces-card').style.display = 'block';
+    const al = document.getElementById('annonces-list');
+    al.innerHTML = '';
+    annonces.forEach(a => {
+      const div = document.createElement('div');
+      div.style.marginBottom = '14px';
+      div.innerHTML = `
+        <div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">${a.titre}</div>
+        ${a.image_url ? `<img src="${a.image_url}" style="width:100%;border-radius:10px;margin-bottom:8px"/>` : ''}
+        <div style="font-size:13px;color:#555;line-height:1.5">${a.contenu}</div>
+        <div style="font-size:11px;color:#bbb;margin-top:4px">${new Date(a.created_at).toLocaleDateString('fr-FR')}</div>`;
+      al.appendChild(div);
+    });
+  }
+}
+
+async function envoyerMessage() {
+  const contenu = document.getElementById('msg-input').value.trim();
+  if (!contenu) return;
+
+  const { error } = await supabase.from('messages').insert({
+    user_id: userId,
+    expediteur: 'client',
+    contenu,
+    lu: false
+  });
+  if (error) { showToast('❌ Erreur envoi'); return; }
+
+  document.getElementById('msg-input').value = '';
+
+  // Notifier Laëtitia par email
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ADMIN, {
+      client_prenom: profil.prenom,
+      chien_nom: profil.nom_chien,
+      message: contenu
+    });
+  } catch(e) { console.warn('Email non envoyé', e); }
+
+  chargerMessages();
+  showToast('✅ Message envoyé !');
+}
+
+async function verifierMessagesNonLus() {
+  const { data } = await supabase.from('messages')
+    .select('id').eq('user_id', userId).eq('expediteur','admin').eq('lu', false);
+  if (data && data.length > 0) {
+    const badge = document.getElementById('badge-msg');
+    badge.textContent = data.length;
+    badge.style.display = 'inline';
+  }
+}
+
+// ── Fiches ressources ──
+async function chargerFiches() {
+  const { data: envoyees } = await supabase.from('fiches_envoyees')
+    .select('*, fiches(*)').eq('user_id', userId).order('envoyee_at', {ascending:false});
+  if (!envoyees) return;
+  fichesToutes = envoyees;
+  afficherFiches(envoyees);
+}
+
+function afficherFiches(liste) {
+  const container = document.getElementById('fiches-list');
+  if (liste.length === 0) { container.innerHTML = '<div class="vide">Aucune fiche dans cette catégorie</div>'; return; }
+  container.innerHTML = '';
+  liste.forEach(fe => {
+    const f = fe.fiches;
+    if (!f) return;
+    const imgs = f.images_urls ? f.images_urls.split('|') : [];
+    const div = document.createElement('div');
+    div.className = 'fiche-card';
+    div.onclick = () => ouvrirFiche(f, fe);
+    div.innerHTML = `
+      ${imgs[0] ? `<img class="fiche-img" src="${imgs[0]}" alt="${f.titre}"/>` : ''}
+      <div class="fiche-body">
+        <span class="fiche-theme">${f.theme || 'Général'}</span>
+        ${!fe.vue ? '<span class="fiche-nouvelle">NOUVEAU</span>' : ''}
+        <div class="fiche-titre">${f.titre}</div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function filtrerFiches(theme, btn) {
+  document.querySelectorAll('.filtre-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (theme === 'tous') { afficherFiches(fichesToutes); return; }
+  afficherFiches(fichesToutes.filter(fe => fe.fiches && fe.fiches.theme === theme));
+}
+
+function ouvrirFiche(f, fe) {
+  // Marquer comme vue
+  if (!fe.vue) { supabase.from('fiches_envoyees').update({ vue: true }).eq('id', fe.id).then(() => {}); }
+
+  const imgs = f.images_urls ? f.images_urls.split('|') : [];
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:999;overflow-y:auto;padding:20px';
+  overlay.innerHTML = `
+    <button onclick="this.parentElement.remove()" style="background:#f0f0f0;border:none;border-radius:8px;padding:8px 16px;margin-bottom:16px;font-size:14px;cursor:pointer">← Retour</button>
+    <div style="max-width:600px;margin:0 auto">
+      <span style="display:inline-block;padding:3px 10px;background:#e8f8f7;color:#2BBFB0;border-radius:10px;font-size:11px;font-weight:700;margin-bottom:8px">${f.theme || ''}</span>
+      <h2 style="font-size:20px;color:#1a1a1a;margin-bottom:16px">${f.titre}</h2>
+      ${imgs.map(url => `<img src="${url}" style="width:100%;border-radius:12px;margin-bottom:12px"/>`).join('')}
+      <div style="font-size:14px;color:#333;line-height:1.7;white-space:pre-wrap;margin-bottom:20px">${f.contenu || ''}</div>
+      ${f.video_url ? `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px">
+        <iframe src="${f.video_url.replace('watch?v=','embed/')}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allowfullscreen></iframe>
+      </div>` : ''}
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// ── Santé ──
+async function chargerSante() {
+  chargerHistoriqueSante();
+}
+
+async function chargerHistoriqueSante() {
+  const { data } = await supabase.from('sante')
+    .select('*').eq('user_id', userId).order('date', {ascending:false}).limit(10);
+  const container = document.getElementById('historique-sante');
+  if (!data || data.length === 0) { container.innerHTML = '<div class="vide">Aucune entrée santé</div>'; return; }
+  container.innerHTML = '';
+  data.forEach(s => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:10px 0;border-bottom:1px solid #f0f0f0';
+    div.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:#2BBFB0;margin-bottom:4px">${new Date(s.date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+      ${s.symptomes ? `<div style="font-size:13px;color:#444">🔍 ${s.symptomes}</div>` : ''}
+      ${s.symptomes_note ? `<div style="font-size:12px;color:#666;margin-top:2px">${s.symptomes_note}</div>` : ''}
+      ${s.traitement_nom ? `<div style="font-size:12px;color:#555;margin-top:4px">💊 ${s.traitement_nom} ${s.traitement_dose || ''}</div>` : ''}
+      ${s.note_sante ? `<div style="font-size:12px;color:#888;font-style:italic;margin-top:4px">${s.note_sante}</div>` : ''}`;
+    container.appendChild(div);
+  });
+}
+
+async function enregistrerSante() {
+  const entree = {
+    user_id: userId,
+    date: dateSelectionneeS,
+    symptomes: symptomesActifs.size > 0 ? [...symptomesActifs].join(', ') : null,
+    symptomes_note: document.getElementById('symptomes_note').value || null,
+    traitement_nom: document.getElementById('traitement_nom').value || null,
+    traitement_dose: document.getElementById('traitement_dose').value || null,
+    traitement_debut: document.getElementById('traitement_debut').value || null,
+    traitement_fin: document.getElementById('traitement_fin').value || null,
+    traitement_note: document.getElementById('traitement_note').value || null,
+    note_sante: document.getElementById('note_sante').value || null,
+  };
+
+  const { error } = await supabase.from('sante').insert(entree);
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  showToast('✅ Entrée santé enregistrée !');
+  symptomesActifs.clear();
+  document.querySelectorAll('.symptome-btn').forEach(b => b.classList.remove('selected'));
+  ['symptomes_note','traitement_nom','traitement_dose','traitement_note','note_sante'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  chargerHistoriqueSante();
+}
+
+// ── RDV + Forfaits ──
+async function chargerRdvForfaits() {
+  const now = new Date().toISOString();
+
+  const { data: rdvs } = await supabase.from('rendez_vous')
+    .select('*').eq('user_id', userId).gte('date_rdv', now).order('date_rdv').limit(5);
+
+  const rdvList = document.getElementById('rdv-list');
+  if (!rdvs || rdvs.length === 0) { rdvList.innerHTML = '<div class="vide">Aucun rendez-vous planifié</div>'; }
+  else {
+    rdvList.innerHTML = '';
+    const moisFR = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+    rdvs.forEach(r => {
+      const d = new Date(r.date_rdv);
+      const div = document.createElement('div');
+      div.className = 'rdv-item';
+      div.innerHTML = `
+        <div class="rdv-date-box"><div class="rdv-jour">${d.getDate()}</div><div class="rdv-mois">${moisFR[d.getMonth()]}</div></div>
+        <div class="rdv-info">
+          <div class="rdv-type">${r.type_rdv || 'Rendez-vous'}</div>
+          ${r.lieu ? `<div class="rdv-lieu">📍 ${r.lieu}</div>` : ''}
+          ${r.note ? `<div class="rdv-note">${r.note}</div>` : ''}
+          <div style="font-size:11px;color:#999;margin-top:2px">${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>`;
+      rdvList.appendChild(div);
+    });
+  }
+
+  const { data: forfaits } = await supabase.from('forfaits')
+    .select('*').eq('user_id', userId).eq('actif', true);
+
+  const fList = document.getElementById('forfaits-list');
+  if (!forfaits || forfaits.length === 0) { fList.innerHTML = '<div class="vide">Aucun forfait actif</div>'; }
+  else {
+    fList.innerHTML = '';
+    forfaits.forEach(f => {
+      const pct = f.nb_seances_total > 0 ? Math.round((f.nb_seances_utilisees / f.nb_seances_total) * 100) : 0;
+      const restantes = (f.nb_seances_total || 0) - (f.nb_seances_utilisees || 0);
+      const div = document.createElement('div');
+      div.className = 'forfait-card';
+      div.innerHTML = `
+        <div class="forfait-nom">${f.nom_forfait}</div>
+        <div class="forfait-progress"><div class="forfait-bar" style="width:${pct}%"></div></div>
+        <div class="forfait-info">${f.nb_seances_utilisees || 0} / ${f.nb_seances_total || '?'} séances utilisées — <strong>${restantes} restante${restantes > 1 ? 's' : ''}</strong>
+        ${f.date_fin ? ` · Jusqu'au ${new Date(f.date_fin).toLocaleDateString('fr-FR')}` : ''}</div>
+        ${f.note ? `<div style="font-size:12px;color:#888;margin-top:4px;font-style:italic">${f.note}</div>` : ''}`;
+      fList.appendChild(div);
+    });
+  }
+}
+
+// ── Utilitaires ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 2800);
+}
+
+async function seDeconnecter() {
+  await supabase.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+init();
+</script>
+</body>
+</html>

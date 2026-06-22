@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>The Dog Experience — Connexion</title>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#2BBFB0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <link rel="apple-touch-icon" href="logo.png"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .logo-wrap {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .logo-wrap img {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      font-size: 22px;
+      color: #1a1a1a;
+      text-align: center;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .subtitle {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 15px;
+      color: #1a1a1a;
+      margin-bottom: 18px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input:focus { border-color: #2BBFB0; }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: #2BBFB0;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #22a89a; }
+    .btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: #2BBFB0;
+      border: 1.5px solid #2BBFB0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: #e8f8f7; }
+
+    .btn-admin {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      color: #999;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.2s;
+    }
+    .btn-admin:hover { border-color: #F5C842; color: #b8960a; }
+
+    .erreur {
+      background: #fff0f0;
+      color: #e05555;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .erreur.visible { display: block; }
+
+    .chargement {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      margin-top: 12px;
+      display: none;
+    }
+    .chargement.visible { display: block; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      color: #ccc;
+      font-size: 13px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e0e0e0;
+    }
+
+    .tag-tde {
+      text-align: center;
+      margin-top: 28px;
+      font-size: 12px;
+      color: #ccc;
+    }
+    .tag-tde span { color: #2BBFB0; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="logo-wrap">
+    <img src="logo.png" alt="The Dog Experience" onerror="this.style.display='none'"/>
+  </div>
+
+  <div class="card">
+    <h1>Mon journal de bord</h1>
+    <p class="subtitle">The Dog Experience</p>
+
+    <div class="erreur" id="erreur"></div>
+
+    <label for="email">Adresse email</label>
+    <input type="email" id="email" placeholder="votre@email.com" autocomplete="email"/>
+
+    <label for="mdp">Mot de passe</label>
+    <input type="password" id="mdp" placeholder="••••••••" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter') seConnecter()"/>
+
+    <button class="btn" onclick="seConnecter()" id="btn-connexion">Se connecter</button>
+
+    <div class="divider">ou</div>
+
+    <button class="btn-secondary" onclick="window.location.href='inscription.html'">
+      Créer mon compte
+    </button>
+
+    <button class="btn-admin" onclick="connexionAdmin()">
+      Accès comportementaliste
+    </button>
+
+    <div class="chargement" id="chargement">Connexion en cours…</div>
+  </div>
+
+  <div class="tag-tde">Suivi comportemental · <span>The Dog Experience</span></div>
+
+<script>
+async function seConnecter() {
+  const email = document.getElementById('email').value.trim();
+  const mdp   = document.getElementById('mdp').value;
+  const errEl = document.getElementById('erreur');
+  const btnEl = document.getElementById('btn-connexion');
+  const chgEl = document.getElementById('chargement');
+
+  errEl.classList.remove('visible');
+
+  if (!email || !mdp) {
+    errEl.textContent = 'Merci de remplir l\'email et le mot de passe.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  btnEl.disabled = true;
+  chgEl.classList.add('visible');
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: mdp });
+
+  if (error) {
+    errEl.textContent = 'Email ou mot de passe incorrect.';
+    errEl.classList.add('visible');
+    btnEl.disabled = false;
+    chgEl.classList.remove('visible');
+    return;
+  }
+
+  // Vérifier si c'est l'admin
+  if (data.user.id === ADMIN_UUID) {
+    window.location.href = 'admin.html';
+    return;
+  }
+
+  // Client normal → dashboard
+  window.location.href = 'dashboard.html';
+}
+
+async function connexionAdmin() {
+  const email = document.getElementById('email').value.trim();
+  const mdp   = document.getElementById('mdp').value;
+
+  if (!email || !mdp) {
+    const errEl = document.getElementById('erreur');
+    errEl.textContent = 'Remplis ton email et mot de passe puis clique sur "Accès comportementaliste".';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: mdp });
+
+  if (error || data.user.id !== ADMIN_UUID) {
+    const errEl = document.getElementById('erreur');
+    errEl.textContent = 'Accès non autorisé.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  window.location.href = 'admin.html';
+}
+</script>
+</body>
+</html>
