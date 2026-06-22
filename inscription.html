@@ -506,7 +506,7 @@ async function creerCompte() {
   btn.textContent = 'Création en cours…';
 
   // 1. Créer le compte Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: mdp });
+  const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password: mdp });
 
   if (authError) {
     errEl.textContent = 'Erreur : ' + authError.message;
@@ -519,7 +519,7 @@ async function creerCompte() {
   const userId = authData.user.id;
 
   // 2. Créer le profil
-  const { error: profileError } = await supabase.from('profiles').insert({
+  const { error: profileError } = await supabaseClient.from('profiles').insert({
     id: userId,
     prenom,
     nom_chien,
