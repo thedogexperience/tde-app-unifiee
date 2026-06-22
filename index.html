@@ -221,7 +221,7 @@ async function seConnecter() {
   btnEl.disabled = true;
   chgEl.classList.add('visible');
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: mdp });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: mdp });
 
   if (error) {
     errEl.textContent = 'Email ou mot de passe incorrect.';
@@ -252,7 +252,7 @@ async function connexionAdmin() {
     return;
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: mdp });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: mdp });
 
   if (error || data.user.id !== ADMIN_UUID) {
     const errEl = document.getElementById('erreur');
