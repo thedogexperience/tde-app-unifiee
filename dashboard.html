@@ -1002,12 +1002,12 @@ let messagesList = [];
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
 async function init() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) { window.location.href = 'index.html'; return; }
   userId = user.id;
   userEmail = user.email;
 
-  const { data: p } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
   if (!p) { window.location.href = 'index.html'; return; }
   profil = p;
 
@@ -1177,7 +1177,7 @@ async function chargerBandeaux() {
   container.innerHTML = '';
 
   // Messages non lus
-  const { data: msgs } = await supabase.from('messages')
+  const { data: msgs } = await supabaseClient.from('messages')
     .select('*').eq('user_id', userId).eq('expediteur','admin').eq('lu', false);
   if (msgs && msgs.length > 0) {
     const b = document.createElement('div');
@@ -1189,7 +1189,7 @@ async function chargerBandeaux() {
 
   // Prochain RDV
   const now = new Date().toISOString();
-  const { data: rdvs } = await supabase.from('rendez_vous')
+  const { data: rdvs } = await supabaseClient.from('rendez_vous')
     .select('*').eq('user_id', userId).gte('date_rdv', now).order('date_rdv').limit(1);
   if (rdvs && rdvs.length > 0) {
     const rdv = rdvs[0];
@@ -1202,7 +1202,7 @@ async function chargerBandeaux() {
   }
 
   // Annonces
-  const { data: annonces } = await supabase.from('annonces').select('*').order('created_at',{ascending:false}).limit(2);
+  const { data: annonces } = await supabaseClient.from('annonces').select('*').order('created_at',{ascending:false}).limit(2);
   if (annonces && annonces.length > 0) {
     annonces.forEach(a => {
       const b = document.createElement('div');
@@ -1216,7 +1216,7 @@ async function chargerBandeaux() {
 
 // ── Journal ──
 async function chargerJournal() {
-  const { data } = await supabase.from('journal')
+  const { data } = await supabaseClient.from('journal')
     .select('*').eq('user_id', userId).eq('date', dateSelectionnee).single();
   if (data) {
     donnees = { ...data };
@@ -1299,7 +1299,7 @@ async function enregistrerJournal() {
     decl_autres_count: compteursDecl.autres ?? null,
   };
 
-  const { error } = await supabase.from('journal').upsert(entree, { onConflict: 'user_id,date' });
+  const { error } = await supabaseClient.from('journal').upsert(entree, { onConflict: 'user_id,date' });
 
   btn.disabled = false; btn.textContent = '✅ Enregistrer la journée';
   if (error) { showToast('❌ Erreur : ' + error.message); return; }
@@ -1308,7 +1308,7 @@ async function enregistrerJournal() {
 
 // ── Messages ──
 async function chargerMessages() {
-  const { data } = await supabase.from('messages')
+  const { data } = await supabaseClient.from('messages')
     .select('*').eq('user_id', userId).order('created_at');
   if (!data) return;
   messagesList = data;
@@ -1316,7 +1316,7 @@ async function chargerMessages() {
   // Marquer admin messages comme lus
   const nonLus = data.filter(m => m.expediteur === 'admin' && !m.lu).map(m => m.id);
   if (nonLus.length > 0) {
-    await supabase.from('messages').update({ lu: true }).in('id', nonLus);
+    await supabaseClient.from('messages').update({ lu: true }).in('id', nonLus);
     document.getElementById('badge-msg').style.display = 'none';
   }
 
@@ -1342,7 +1342,7 @@ async function chargerMessages() {
   list.scrollTop = list.scrollHeight;
 
   // Annonces
-  const { data: annonces } = await supabase.from('annonces').select('*').order('created_at',{ascending:false});
+  const { data: annonces } = await supabaseClient.from('annonces').select('*').order('created_at',{ascending:false});
   if (annonces && annonces.length > 0) {
     document.getElementById('annonces-card').style.display = 'block';
     const al = document.getElementById('annonces-list');
@@ -1364,7 +1364,7 @@ async function envoyerMessage() {
   const contenu = document.getElementById('msg-input').value.trim();
   if (!contenu) return;
 
-  const { error } = await supabase.from('messages').insert({
+  const { error } = await supabaseClient.from('messages').insert({
     user_id: userId,
     expediteur: 'client',
     contenu,
@@ -1388,7 +1388,7 @@ async function envoyerMessage() {
 }
 
 async function verifierMessagesNonLus() {
-  const { data } = await supabase.from('messages')
+  const { data } = await supabaseClient.from('messages')
     .select('id').eq('user_id', userId).eq('expediteur','admin').eq('lu', false);
   if (data && data.length > 0) {
     const badge = document.getElementById('badge-msg');
@@ -1399,7 +1399,7 @@ async function verifierMessagesNonLus() {
 
 // ── Fiches ressources ──
 async function chargerFiches() {
-  const { data: envoyees } = await supabase.from('fiches_envoyees')
+  const { data: envoyees } = await supabaseClient.from('fiches_envoyees')
     .select('*, fiches(*)').eq('user_id', userId).order('envoyee_at', {ascending:false});
   if (!envoyees) return;
   fichesToutes = envoyees;
@@ -1437,7 +1437,7 @@ function filtrerFiches(theme, btn) {
 
 function ouvrirFiche(f, fe) {
   // Marquer comme vue
-  if (!fe.vue) { supabase.from('fiches_envoyees').update({ vue: true }).eq('id', fe.id).then(() => {}); }
+  if (!fe.vue) { supabaseClient.from('fiches_envoyees').update({ vue: true }).eq('id', fe.id).then(() => {}); }
 
   const imgs = f.images_urls ? f.images_urls.split('|') : [];
   const overlay = document.createElement('div');
@@ -1462,7 +1462,7 @@ async function chargerSante() {
 }
 
 async function chargerHistoriqueSante() {
-  const { data } = await supabase.from('sante')
+  const { data } = await supabaseClient.from('sante')
     .select('*').eq('user_id', userId).order('date', {ascending:false}).limit(10);
   const container = document.getElementById('historique-sante');
   if (!data || data.length === 0) { container.innerHTML = '<div class="vide">Aucune entrée santé</div>'; return; }
@@ -1494,7 +1494,7 @@ async function enregistrerSante() {
     note_sante: document.getElementById('note_sante').value || null,
   };
 
-  const { error } = await supabase.from('sante').insert(entree);
+  const { error } = await supabaseClient.from('sante').insert(entree);
   if (error) { showToast('❌ Erreur : ' + error.message); return; }
   showToast('✅ Entrée santé enregistrée !');
   symptomesActifs.clear();
@@ -1509,7 +1509,7 @@ async function enregistrerSante() {
 async function chargerRdvForfaits() {
   const now = new Date().toISOString();
 
-  const { data: rdvs } = await supabase.from('rendez_vous')
+  const { data: rdvs } = await supabaseClient.from('rendez_vous')
     .select('*').eq('user_id', userId).gte('date_rdv', now).order('date_rdv').limit(5);
 
   const rdvList = document.getElementById('rdv-list');
@@ -1533,7 +1533,7 @@ async function chargerRdvForfaits() {
     });
   }
 
-  const { data: forfaits } = await supabase.from('forfaits')
+  const { data: forfaits } = await supabaseClient.from('forfaits')
     .select('*').eq('user_id', userId).eq('actif', true);
 
   const fList = document.getElementById('forfaits-list');
@@ -1565,7 +1565,7 @@ function showToast(msg) {
 }
 
 async function seDeconnecter() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   window.location.href = 'index.html';
 }
 
