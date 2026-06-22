@@ -816,7 +816,7 @@ emailjs.init(EMAILJS_PUBLIC_KEY);
 
 // ── Init ──
 async function init() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user || user.id !== ADMIN_UUID) {
     window.location.href = 'index.html'; return;
   }
@@ -841,9 +841,9 @@ async function chargerDashboard() {
   const today = new Date().toISOString().split('T')[0];
 
   const [{ count: nbClients }, { count: nbEntrees }, { count: nbMsgs }] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    supabase.from('journal').select('*', { count: 'exact', head: true }).eq('date', today),
-    supabase.from('messages').select('*', { count: 'exact', head: true }).eq('expediteur','client').eq('lu', false)
+    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('journal').select('*', { count: 'exact', head: true }).eq('date', today),
+    supabaseClient.from('messages').select('*', { count: 'exact', head: true }).eq('expediteur','client').eq('lu', false)
   ]);
 
   document.getElementById('stat-clients').textContent = nbClients || 0;
@@ -855,7 +855,7 @@ async function chargerDashboard() {
   }
 
   // Activité récente
-  const { data: entrees } = await supabase.from('journal')
+  const { data: entrees } = await supabaseClient.from('journal')
     .select('*, profiles(prenom, nom_chien)')
     .order('created_at', { ascending: false }).limit(8);
 
@@ -882,7 +882,7 @@ async function chargerDashboard() {
   }
 
   // Fiches récentes
-  const { data: fiches } = await supabase.from('fiches')
+  const { data: fiches } = await supabaseClient.from('fiches')
     .select('*').order('created_at', { ascending: false }).limit(5);
   const fr = document.getElementById('fiches-recentes');
   if (!fiches || fiches.length === 0) { fr.innerHTML = '<div class="vide">Aucune fiche</div>'; }
@@ -905,7 +905,7 @@ async function chargerDashboard() {
 
 // ── Clients ──
 async function chargerClients() {
-  const { data } = await supabase.from('profiles').select('*').order('created_at');
+  const { data } = await supabaseClient.from('profiles').select('*').order('created_at');
   tousClients = data || [];
   afficherGrilleClients();
   // Peupler select messages
@@ -991,7 +991,7 @@ function afficherSousOnglet(onglet) {
 
 async function chargerJournalClient() {
   if (!clientSelectionne) return;
-  const { data } = await supabase.from('journal')
+  const { data } = await supabaseClient.from('journal')
     .select('*').eq('user_id', clientSelectionne.id)
     .order('date', { ascending: false }).limit(30);
 
@@ -1040,7 +1040,7 @@ function labelEtat(val) {
 // ── RDV ──
 async function chargerRdvClient() {
   if (!clientSelectionne) return;
-  const { data } = await supabase.from('rendez_vous')
+  const { data } = await supabaseClient.from('rendez_vous')
     .select('*').eq('user_id', clientSelectionne.id)
     .order('date_rdv');
   const c = document.getElementById('rdv-client-list');
@@ -1070,7 +1070,7 @@ async function ajouterRdv() {
   const heure = document.getElementById('rdv-heure').value;
   if (!date) { showToast('⚠️ Sélectionne une date'); return; }
   const dateTime = heure ? `${date}T${heure}:00` : `${date}T09:00:00`;
-  const { error } = await supabase.from('rendez_vous').insert({
+  const { error } = await supabaseClient.from('rendez_vous').insert({
     user_id: clientSelectionne.id,
     date_rdv: dateTime,
     type_rdv: document.getElementById('rdv-type').value,
@@ -1085,7 +1085,7 @@ async function ajouterRdv() {
 
 async function supprimerRdv(id) {
   if (!confirm('Supprimer ce RDV ?')) return;
-  await supabase.from('rendez_vous').delete().eq('id', id);
+  await supabaseClient.from('rendez_vous').delete().eq('id', id);
   chargerRdvClient();
   showToast('🗑️ RDV supprimé');
 }
@@ -1093,7 +1093,7 @@ async function supprimerRdv(id) {
 // ── Forfaits ──
 async function chargerForfaitsClient() {
   if (!clientSelectionne) return;
-  const { data } = await supabase.from('forfaits')
+  const { data } = await supabaseClient.from('forfaits')
     .select('*').eq('user_id', clientSelectionne.id).order('created_at', { ascending: false });
   const c = document.getElementById('forfaits-client-list');
   if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucun forfait</div>'; return; }
@@ -1154,9 +1154,9 @@ async function sauvegarderForfait() {
 
   let error;
   if (forfaitEnEdition) {
-    ({ error } = await supabase.from('forfaits').update(donnees).eq('id', forfaitEnEdition.id));
+    ({ error } = await supabaseClient.from('forfaits').update(donnees).eq('id', forfaitEnEdition.id));
   } else {
-    ({ error } = await supabase.from('forfaits').insert(donnees));
+    ({ error } = await supabaseClient.from('forfaits').insert(donnees));
   }
   if (error) { showToast('❌ Erreur : ' + error.message); return; }
   fermerModal('modal-forfait');
@@ -1166,14 +1166,14 @@ async function sauvegarderForfait() {
 
 async function utiliserSeance(id, utilisees, total) {
   if (utilisees >= total) { showToast('⚠️ Toutes les séances ont été utilisées'); return; }
-  await supabase.from('forfaits').update({ nb_seances_utilisees: utilisees + 1 }).eq('id', id);
+  await supabaseClient.from('forfaits').update({ nb_seances_utilisees: utilisees + 1 }).eq('id', id);
   chargerForfaitsClient();
   showToast('✅ Séance comptabilisée');
 }
 
 async function supprimerForfait(id) {
   if (!confirm('Supprimer ce forfait ?')) return;
-  await supabase.from('forfaits').delete().eq('id', id);
+  await supabaseClient.from('forfaits').delete().eq('id', id);
   chargerForfaitsClient();
   showToast('🗑️ Forfait supprimé');
 }
@@ -1181,7 +1181,7 @@ async function supprimerForfait(id) {
 // ── Santé client ──
 async function chargerSanteClient() {
   if (!clientSelectionne) return;
-  const { data } = await supabase.from('sante')
+  const { data } = await supabaseClient.from('sante')
     .select('*').eq('user_id', clientSelectionne.id)
     .order('date', { ascending: false }).limit(20);
   const c = document.getElementById('sante-client-list');
@@ -1206,13 +1206,13 @@ async function confirmerSuppression() {
   if (!confirm(`Supprimer définitivement ${clientSelectionne.prenom} et toutes ses données ?`)) return;
   const id = clientSelectionne.id;
   await Promise.all([
-    supabase.from('journal').delete().eq('user_id', id),
-    supabase.from('sante').delete().eq('user_id', id),
-    supabase.from('messages').delete().eq('user_id', id),
-    supabase.from('rendez_vous').delete().eq('user_id', id),
-    supabase.from('forfaits').delete().eq('user_id', id),
-    supabase.from('fiches_envoyees').delete().eq('user_id', id),
-    supabase.from('profiles').delete().eq('id', id),
+    supabaseClient.from('journal').delete().eq('user_id', id),
+    supabaseClient.from('sante').delete().eq('user_id', id),
+    supabaseClient.from('messages').delete().eq('user_id', id),
+    supabaseClient.from('rendez_vous').delete().eq('user_id', id),
+    supabaseClient.from('forfaits').delete().eq('user_id', id),
+    supabaseClient.from('fiches_envoyees').delete().eq('user_id', id),
+    supabaseClient.from('profiles').delete().eq('id', id),
   ]);
   showToast('🗑️ Client supprimé');
   retourClients();
@@ -1242,12 +1242,12 @@ async function chargerMessagesClient() {
   document.getElementById('msg-client-titre').textContent =
     `💬 ${clientMsgSelectionne?.prenom} — ${clientMsgSelectionne?.nom_chien}`;
 
-  const { data } = await supabase.from('messages')
+  const { data } = await supabaseClient.from('messages')
     .select('*').eq('user_id', userId).order('created_at');
 
   // Marquer comme lus
   const nonLus = (data || []).filter(m => m.expediteur === 'client' && !m.lu).map(m => m.id);
-  if (nonLus.length > 0) await supabase.from('messages').update({ lu: true }).in('id', nonLus);
+  if (nonLus.length > 0) await supabaseClient.from('messages').update({ lu: true }).in('id', nonLus);
 
   const list = document.getElementById('msg-list-admin');
   if (!data || data.length === 0) { list.innerHTML = '<div class="vide">Aucun message</div>'; return; }
@@ -1275,7 +1275,7 @@ async function envoyerReponse() {
   const contenu = document.getElementById('msg-admin-input').value.trim();
   if (!userId || !contenu) return;
 
-  const { error } = await supabase.from('messages').insert({
+  const { error } = await supabaseClient.from('messages').insert({
     user_id: userId,
     expediteur: 'admin',
     contenu,
@@ -1287,7 +1287,7 @@ async function envoyerReponse() {
   // Notifier le client par email
   const client = tousClients.find(c => c.id === userId);
   if (client) {
-    const { data: userData } = await supabase.auth.admin?.getUserById?.(userId) || { data: null };
+    const { data: userData } = await supabaseClient.auth.admin?.getUserById?.(userId) || { data: null };
     try {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
         client_prenom: client.prenom,
@@ -1303,7 +1303,7 @@ async function envoyerReponse() {
 }
 
 async function verifierMsgsNonLus() {
-  const { count } = await supabase.from('messages')
+  const { count } = await supabaseClient.from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('expediteur','client').eq('lu', false);
   const badge = document.getElementById('badge-msg');
@@ -1313,7 +1313,7 @@ async function verifierMsgsNonLus() {
 
 // ── Fiches Admin ──
 async function chargerFichesAdmin() {
-  const { data } = await supabase.from('fiches').select('*').order('created_at', { ascending: false });
+  const { data } = await supabaseClient.from('fiches').select('*').order('created_at', { ascending: false });
   toutesLesfiches = data || [];
   afficherFichesAdmin(toutesLesfiches);
 }
@@ -1430,9 +1430,9 @@ async function sauvegarderFiche() {
 
   let error;
   if (ficheEnEdition) {
-    ({ error } = await supabase.from('fiches').update(donnees).eq('id', ficheEnEdition.id));
+    ({ error } = await supabaseClient.from('fiches').update(donnees).eq('id', ficheEnEdition.id));
   } else {
-    ({ error } = await supabase.from('fiches').insert(donnees));
+    ({ error } = await supabaseClient.from('fiches').insert(donnees));
   }
   if (error) { showToast('❌ Erreur : ' + error.message); return; }
   fermerModal('modal-fiche');
@@ -1443,7 +1443,7 @@ async function sauvegarderFiche() {
 
 async function supprimerFiche(id) {
   if (!confirm('Supprimer cette fiche définitivement ?')) return;
-  await supabase.from('fiches').delete().eq('id', id);
+  await supabaseClient.from('fiches').delete().eq('id', id);
   chargerFichesAdmin();
   showToast('🗑️ Fiche supprimée');
 }
@@ -1465,7 +1465,7 @@ function ouvrirEnvoiFiche(ficheId) {
 }
 
 async function envoyerFicheAClient(ficheId, client) {
-  const { error } = await supabase.from('fiches_envoyees').insert({
+  const { error } = await supabaseClient.from('fiches_envoyees').insert({
     user_id: client.id,
     fiche_id: ficheId,
     vue: false
@@ -1477,7 +1477,7 @@ async function envoyerFicheAClient(ficheId, client) {
 
 // ── Annonces ──
 async function chargerAnnonces() {
-  const { data } = await supabase.from('annonces').select('*').order('created_at', { ascending: false });
+  const { data } = await supabaseClient.from('annonces').select('*').order('created_at', { ascending: false });
   const c = document.getElementById('annonces-list');
   if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucune annonce</div>'; return; }
   c.innerHTML = '';
@@ -1503,7 +1503,7 @@ async function envoyerAnnonce() {
   const contenu = document.getElementById('annonce-contenu').value.trim();
   if (!titre || !contenu) { showToast('⚠️ Titre et message requis'); return; }
 
-  const { error } = await supabase.from('annonces').insert({
+  const { error } = await supabaseClient.from('annonces').insert({
     titre,
     contenu,
     image_url: document.getElementById('annonce-image').value || null,
@@ -1518,7 +1518,7 @@ async function envoyerAnnonce() {
 
 async function supprimerAnnonce(id) {
   if (!confirm('Supprimer cette annonce ?')) return;
-  await supabase.from('annonces').delete().eq('id', id);
+  await supabaseClient.from('annonces').delete().eq('id', id);
   chargerAnnonces();
   showToast('🗑️ Annonce supprimée');
 }
@@ -1534,7 +1534,7 @@ function showToast(msg) {
 }
 
 async function seDeconnecter() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   window.location.href = 'index.html';
 }
 
