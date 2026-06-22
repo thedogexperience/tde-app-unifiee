@@ -12,8 +12,8 @@ const ADMIN_UUID  = 'c0a425b5-4e93-49f2-9938-38e3540893de';
 // EmailJS
 const EMAILJS_PUBLIC_KEY      = 'cPPSGLSX0DM7sDsS2';
 const EMAILJS_SERVICE_ID      = 'service_s94ctbc';
-const EMAILJS_TEMPLATE_ADMIN  = 'template_67dfq99';  // notif → Laëtitia
-const EMAILJS_TEMPLATE_CLIENT = 'template_fdabc6n';  // notif → client
+const EMAILJS_TEMPLATE_ADMIN  = 'template_67dfq99';
+const EMAILJS_TEMPLATE_CLIENT = 'template_fdabc6n';
 
 // Charte graphique TDE
 const COLORS = {
@@ -30,5 +30,5 @@ const COLORS = {
 // Logo
 const LOGO_URL = 'https://i.imgur.com/rq4rDYi.png';
 
-// Client Supabase (utilisé dans tous les fichiers)
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Client Supabase — NE PAS renommer cette variable
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
