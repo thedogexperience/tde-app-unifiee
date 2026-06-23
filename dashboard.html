@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <link rel="apple-touch-icon" href="logo.png"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script src="config.js"></script>
   <style>
@@ -851,14 +852,6 @@
         <label class="toggle"><input type="checkbox" id="mise_au_vert"/><span class="toggle-slider"></span></label>
       </div>
 
-      <label class="form-label">Charge allostatique estimée</label>
-      <div class="slider-wrap">
-        <input type="range" id="charge_allostatique" min="0" max="10" value="0"
-               oninput="document.getElementById('charge-val').textContent=this.value"/>
-        <div class="slider-labels"><span>0 — Vide</span><span>10 — Débordement</span></div>
-        <div class="slider-val" id="charge-val">0</div>
-      </div>
-
       <label class="form-label">Sommeil du chien</label>
       <div style="display:flex;gap:10px;margin-bottom:4px">
         <div style="flex:1">
@@ -875,10 +868,13 @@
       <div class="compteur-row">
         <span class="compteur-label">Nombre de stimuli</span>
         <div class="compteur-controls">
-          <button class="compteur-btn btn-moins" onclick="modifCompteur('stimuli_sensible',-1)">−</button>
+          <button class="compteur-btn btn-moins" onclick="window.modifCompteur('stimuli_sensible',-1)">−</button>
           <span class="compteur-val" id="val-stimuli_sensible">0</span>
-          <button class="compteur-btn btn-plus" onclick="modifCompteur('stimuli_sensible',1)">+</button>
+          <button class="compteur-btn btn-plus" onclick="window.modifCompteur('stimuli_sensible',1)">+</button>
         </div>
+      </div>
+      <div style="font-size:11px;color:#999;margin-top:6px;font-style:italic;line-height:1.4">
+        💡 Additionne tout ce qui a pu affecter ton chien : chiens croisés, voitures, bruits, humains inconnus, odeurs, situations stressantes…
       </div>
 
       <div id="comportements-sensible-dynamiques"></div>
@@ -1012,6 +1008,14 @@
 ══════════════════════════════════════════════ -->
 <div class="page" id="page-suivi">
   <div style="padding-top:12px">
+
+    <div class="card">
+      <div class="card-title">📈 Évolution sur 30 jours</div>
+      <div id="graphique-legende" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;font-size:12px"></div>
+      <canvas id="graphique-suivi" height="220"></canvas>
+      <div id="graphique-vide" class="vide" style="display:none">Pas encore assez de données (3 jours minimum)</div>
+    </div>
+
     <div class="card">
       <div class="card-title">📅 Prochains rendez-vous</div>
       <div id="rdv-list"><div class="vide">Aucun rendez-vous planifié</div></div>
@@ -1131,6 +1135,7 @@ window.afficherPage = function(page) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('tab-' + page).classList.add('active');
+  if (page === 'suivi') chargerGraphique();
 }
 
 // ── Calendrier ──
@@ -2152,6 +2157,85 @@ async function enregistrerJournalRapide() {
   btn.disabled = false; btn.textContent = '✅ Enregistrer';
   if (error) { showToast('❌ Erreur : ' + error.message); return; }
   showToast('✅ Journée enregistrée !');
+}
+
+// ── GRAPHIQUE ──
+let monGraphique = null;
+
+const EMOTION_SCORE = {
+  tres_bien: 4, bien: 3, serein: 4, equilibre: 3,
+  moyen: 2, peu_tendu: 2, fatigue: 2,
+  stresse: 1, difficile: 1, anxieux: 1,
+  surcharge: 0, decouvrage: 0, epuise: 0
+};
+
+async function chargerGraphique() {
+  const { data } = await supabaseClient.from('journal')
+    .select('date,humeur,emotion_maison,humain_etat,sommeil_chien_nuit,heures_nuit,decl_chiens,decl_humains,decl_voitures,decl_velos,decl_bruits,decl_autres_count,stimuli_total')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+    .limit(30);
+
+  if (!data || data.length < 2) {
+    document.getElementById('graphique-vide').style.display = 'block';
+    document.getElementById('graphique-suivi').style.display = 'none';
+    return;
+  }
+
+  const labels = data.map(d => new Date(d.date).toLocaleDateString('fr-FR', { day:'numeric', month:'short' }));
+  const datasets = [];
+  const legende = document.getElementById('graphique-legende');
+  legende.innerHTML = '';
+
+  const ajouterDataset = (label, couleur, valeurs) => {
+    if (valeurs.every(v => v === null)) return;
+    datasets.push({
+      label,
+      data: valeurs,
+      borderColor: couleur,
+      backgroundColor: couleur + '22',
+      tension: 0.3,
+      pointRadius: 4,
+      fill: false,
+      spanGaps: true
+    });
+    legende.innerHTML += '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:' + couleur + ';display:inline-block;border-radius:2px"></span>' + label + '</span>';
+  };
+
+  // Émotion chien
+  if (profil.suivi_chiot) {
+    ajouterDataset('😊 Humeur chiot', '#F5C842', data.map(d => EMOTION_SCORE[d.humeur] ?? null));
+    ajouterDataset('😴 Sommeil (h)', '#2BBFB0', data.map(d => d.heures_nuit));
+  }
+  if (profil.suivi_sensible) {
+    ajouterDataset('🌸 Émotion chien', '#9b59b6', data.map(d => EMOTION_SCORE[d.emotion_maison] ?? null));
+    ajouterDataset('😴 Sommeil (h)', '#2BBFB0', data.map(d => d.sommeil_chien_nuit));
+  }
+  if (profil.suivi_reactif) {
+    const decls = data.map(d => {
+      const total = (d.decl_chiens||0)+(d.decl_humains||0)+(d.decl_voitures||0)+(d.decl_velos||0)+(d.decl_bruits||0)+(d.decl_autres_count||0)+(d.stimuli_total||0);
+      return total > 0 ? total : null;
+    });
+    ajouterDataset('⚡ Déclenchements', '#e05555', decls);
+  }
+  // État humain toujours
+  ajouterDataset('🧑 État humain', '#888888', data.map(d => EMOTION_SCORE[d.humain_etat] ?? null));
+
+  const ctx = document.getElementById('graphique-suivi').getContext('2d');
+  if (monGraphique) monGraphique.destroy();
+  monGraphique = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 4, ticks: { stepSize: 1, callback: v => ['😰','😐','🙂','😊','🌟'][v] || v }, grid: { color: '#f0f0f0' } },
+        x: { ticks: { maxTicksLimit: 7, font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
 }
 
 async function seDeconnecter() {
