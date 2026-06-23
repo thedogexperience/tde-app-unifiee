@@ -840,6 +840,36 @@
     <textarea id="note_libre" placeholder="Observations, questions, événements particuliers…" rows="3"></textarea>
   </div>
 
+  <!-- Santé optionnelle dans le journal -->
+  <div class="card">
+    <div class="toggle-row" style="border:none;padding:0">
+      <span class="toggle-label" style="font-weight:700;color:#555">🏥 Signaler un souci de santé aujourd'hui</span>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-sante-journal" onchange="window.toggleSanteJournal()"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="sante-journal-section" style="display:none;margin-top:14px;border-top:1px solid #f0f0f0;padding-top:14px">
+      <label class="form-label" style="margin-top:0">Symptômes observés</label>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('boiterie',this)">🦵 Boiterie</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('grattage',this)">✋ Grattage</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('vomissement',this)">🤢 Vomissement</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('diarrhee',this)">💩 Diarrhée</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('perte_appetit',this)">🍽️ Perte d'appétit</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('fatigue',this)">😴 Fatigue anormale</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('yeux',this)">👁️ Yeux</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('oreilles',this)">👂 Oreilles</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('peau',this)">🩹 Peau/poils</button>
+        <button class="choice-btn" onclick="window.toggleSymptomeJournal('agitation',this)">😵 Agitation</button>
+      </div>
+      <label class="form-label">Description</label>
+      <textarea id="sante_journal_note" placeholder="Décris ce que tu observes…" rows="2"></textarea>
+      <label class="form-label">Traitement en cours ?</label>
+      <input type="text" id="sante_journal_traitement" placeholder="ex: Frontline, Apoquel…"/>
+    </div>
+  </div>
+
   <button class="btn-save" onclick="enregistrerJournal()" id="btn-save">
     ✅ Enregistrer la journée
   </button>
@@ -1189,6 +1219,22 @@ window.toggleSection = function(id) {
   btn.querySelector('span:last-child').textContent = el.classList.contains('open') ? '▲' : '▼';
 }
 
+window.toggleSanteJournal = function() {
+  const section = document.getElementById('sante-journal-section');
+  section.style.display = document.getElementById('toggle-sante-journal').checked ? 'block' : 'none';
+};
+
+let symptomesJournal = new Set();
+window.toggleSymptomeJournal = function(val, btn) {
+  if (symptomesJournal.has(val)) {
+    symptomesJournal.delete(val);
+    btn.classList.remove('selected');
+  } else {
+    symptomesJournal.add(val);
+    btn.classList.add('selected');
+  }
+};
+
 window.toggleSolitudeDuree = function() {
   document.getElementById('solitude-duree-wrap').style.display =
     document.getElementById('solitude_en_cours').checked ? 'block' : 'none';
@@ -1257,6 +1303,10 @@ async function chargerJournal() {
   multiSelects = { activites: new Set(), decouvertes: new Set() };
   compteurs = { stimuli_sensible: 0, aboiements: 0 };
   symptomesActifs = new Set();
+  symptomesJournal = new Set();
+  const toggleSante = document.getElementById('toggle-sante-journal');
+  if (toggleSante) { toggleSante.checked = false; document.getElementById('sante-journal-section').style.display = 'none'; }
+  document.querySelectorAll('#sante-journal-section .choice-btn').forEach(b => b.classList.remove('selected'));
 
   const setVal = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
   const setChecked = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
@@ -1428,6 +1478,23 @@ async function enregistrerJournal() {
 
   btn.disabled = false; btn.textContent = '✅ Enregistrer la journée';
   if (error) { showToast('❌ Erreur : ' + error.message); return; }
+
+  // Enregistrer santé si toggle activé
+  if (document.getElementById('toggle-sante-journal')?.checked) {
+    const symptomes = [...symptomesJournal].join(', ');
+    const note = document.getElementById('sante_journal_note')?.value || null;
+    const traitement = document.getElementById('sante_journal_traitement')?.value || null;
+    if (symptomes || note || traitement) {
+      await supabaseClient.from('sante').insert({
+        user_id: userId,
+        date: dateSelectionnee,
+        symptomes: symptomes || null,
+        symptomes_note: note,
+        traitement_nom: traitement,
+      });
+    }
+  }
+
   showToast('✅ Journée enregistrée !');
 }
 
