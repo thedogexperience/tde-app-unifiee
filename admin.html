@@ -562,6 +562,8 @@
         <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('rdv')">📅 RDV</button>
         <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('forfaits')">🎟️ Forfaits</button>
         <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('sante')">🏥 Santé</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('notes')">📋 Notes</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('objectifs')">🎯 Objectifs</button>
         <button class="btn btn-rouge" style="font-size:12px;padding:8px 14px" onclick="confirmerSuppression()">🗑️ Supprimer</button>
       </div>
 
@@ -642,6 +644,32 @@
         <div class="card">
           <div class="card-title">🏥 Suivi santé</div>
           <div id="sante-client-list"><div class="vide">Aucune entrée santé</div></div>
+        </div>
+      </div>
+
+      <!-- Notes de séance -->
+      <div id="sous-notes" style="display:none">
+        <div class="card">
+          <div class="card-title">📋 Notes de séance
+            <span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">Invisible pour le client</span>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Date de la séance</label>
+            <input type="date" id="note-date" style="width:180px;padding:8px;border:1.5px solid #e0e0e0;border-radius:8px;margin-bottom:8px"/>
+            <textarea id="note-contenu" placeholder="Observations, points travaillés, suite à donner…" rows="4" style="width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none"></textarea>
+            <button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:10px 18px" onclick="ajouterNoteSeance()">+ Ajouter cette note</button>
+          </div>
+          <div id="notes-liste"><div class="vide">Aucune note pour ce client</div></div>
+        </div>
+      </div>
+
+      <!-- Objectifs -->
+      <div id="sous-objectifs" style="display:none">
+        <div class="card">
+          <div class="card-title">🎯 Objectifs du parcours
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" onclick="ouvrirModalObjectif()">+ Ajouter</button>
+          </div>
+          <div id="objectifs-liste"><div class="vide">Aucun objectif défini</div></div>
         </div>
       </div>
 
@@ -849,6 +877,19 @@
   </div>
 </div>
 
+<!-- Modal Objectif -->
+<div class="modal-overlay" id="modal-objectif">
+  <div class="modal">
+    <button class="modal-close" onclick="fermerModal('modal-objectif')">✕ Fermer</button>
+    <div class="modal-title" id="modal-objectif-titre">🎯 Ajouter un objectif</div>
+    <label>Objectif</label>
+    <input type="text" id="objectif-titre" placeholder="ex: Marcher 10 min sans réaction"/>
+    <label>Description (facultatif)</label>
+    <textarea id="objectif-description" rows="2" placeholder="Précisions, contexte…"></textarea>
+    <button class="btn btn-primary btn-full" onclick="sauvegarderObjectif()">Enregistrer</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -1042,14 +1083,17 @@ function retourClients() {
 }
 
 function afficherSousOnglet(onglet) {
-  ['journal','fiches-client','rdv','forfaits','sante'].forEach(o => {
-    document.getElementById('sous-' + o).style.display = o === onglet ? 'block' : 'none';
+  ['journal','fiches-client','rdv','forfaits','sante','notes','objectifs'].forEach(o => {
+    const el = document.getElementById('sous-' + o);
+    if (el) el.style.display = o === onglet ? 'block' : 'none';
   });
   if (onglet === 'journal') chargerJournalClient();
   if (onglet === 'fiches-client') chargerFichesClientEnvoyees();
   if (onglet === 'rdv') chargerRdvClient();
   if (onglet === 'forfaits') chargerForfaitsClient();
   if (onglet === 'sante') chargerSanteClient();
+  if (onglet === 'notes') chargerNotesSeance();
+  if (onglet === 'objectifs') chargerObjectifs();
 }
 
 // ── Fiches client ──
@@ -1906,6 +1950,129 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('visible');
   setTimeout(() => t.classList.remove('visible'), 2800);
+}
+
+// ── Notes de séance ──
+async function chargerNotesSeance() {
+  if (!clientSelectionne) return;
+  // Pré-remplir la date avec aujourd'hui
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('note-date').value = today;
+
+  const { data } = await supabaseClient.from('notes_seance')
+    .select('*').eq('user_id', clientSelectionne.id)
+    .order('date_seance', { ascending: false });
+
+  const c = document.getElementById('notes-liste');
+  if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucune note pour ce client</div>'; return; }
+
+  c.innerHTML = '';
+  data.forEach(n => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:12px 0;border-bottom:1px solid #f0f0f0';
+    div.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<div style="font-size:12px;font-weight:700;color:#2BBFB0">' +
+          new Date(n.date_seance).toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'}) +
+        '</div>' +
+        '<button class="btn-icon btn-del" onclick="supprimerNote('' + n.id + '')" title="Supprimer">🗑️</button>' +
+      '</div>' +
+      '<div style="font-size:13px;color:#444;line-height:1.6;white-space:pre-wrap">' + n.contenu + '</div>';
+    c.appendChild(div);
+  });
+}
+
+async function ajouterNoteSeance() {
+  const date = document.getElementById('note-date').value;
+  const contenu = document.getElementById('note-contenu').value.trim();
+  if (!date || !contenu) { showToast('⚠️ Date et contenu requis'); return; }
+
+  const { error } = await supabaseClient.from('notes_seance').insert({
+    user_id: clientSelectionne.id,
+    date_seance: date,
+    contenu
+  });
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  document.getElementById('note-contenu').value = '';
+  chargerNotesSeance();
+  showToast('✅ Note enregistrée !');
+}
+
+async function supprimerNote(id) {
+  if (!confirm('Supprimer cette note ?')) return;
+  await supabaseClient.from('notes_seance').delete().eq('id', id);
+  chargerNotesSeance();
+  showToast('🗑️ Note supprimée');
+}
+
+// ── Objectifs ──
+let objectifEnEdition = null;
+
+async function chargerObjectifs() {
+  if (!clientSelectionne) return;
+  const { data } = await supabaseClient.from('objectifs')
+    .select('*').eq('user_id', clientSelectionne.id)
+    .order('created_at');
+
+  const c = document.getElementById('objectifs-liste');
+  if (!data || data.length === 0) { c.innerHTML = '<div class="vide">Aucun objectif défini</div>'; return; }
+
+  c.innerHTML = '';
+  data.forEach(o => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:12px;border-radius:10px;margin-bottom:8px;background:' + (o.atteint ? '#e8f8f7' : '#f8f8f8') + ';border:1.5px solid ' + (o.atteint ? '#2BBFB0' : '#e0e0e0');
+    div.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="font-size:20px">' + (o.atteint ? '✅' : '🎯') + '</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:13px;font-weight:700;color:' + (o.atteint ? '#2BBFB0' : '#1a1a1a') + ';' + (o.atteint ? 'text-decoration:line-through;' : '') + '">' + o.titre + '</div>' +
+          (o.description ? '<div style="font-size:12px;color:#888;margin-top:2px">' + o.description + '</div>' : '') +
+          (o.atteint && o.date_atteint ? '<div style="font-size:11px;color:#2BBFB0;margin-top:3px">✓ Atteint le ' + new Date(o.date_atteint).toLocaleDateString('fr-FR') + '</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          (!o.atteint ? '<button class="btn btn-primary" style="font-size:11px;padding:5px 10px" onclick="cocherObjectif('' + o.id + '')">✓ Atteint !</button>' : '') +
+          '<button class="btn-icon btn-del" onclick="supprimerObjectif('' + o.id + '')">🗑️</button>' +
+        '</div>' +
+      '</div>';
+    c.appendChild(div);
+  });
+}
+
+function ouvrirModalObjectif() {
+  objectifEnEdition = null;
+  document.getElementById('modal-objectif-titre').textContent = '🎯 Ajouter un objectif';
+  document.getElementById('objectif-titre').value = '';
+  document.getElementById('objectif-description').value = '';
+  document.getElementById('modal-objectif').classList.add('open');
+}
+
+async function sauvegarderObjectif() {
+  const titre = document.getElementById('objectif-titre').value.trim();
+  if (!titre) { showToast('⚠️ Titre requis'); return; }
+  const { error } = await supabaseClient.from('objectifs').insert({
+    user_id: clientSelectionne.id,
+    titre,
+    description: document.getElementById('objectif-description').value || null,
+    atteint: false
+  });
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  fermerModal('modal-objectif');
+  chargerObjectifs();
+  showToast('✅ Objectif ajouté !');
+}
+
+async function cocherObjectif(id) {
+  const today = new Date().toISOString().split('T')[0];
+  await supabaseClient.from('objectifs').update({ atteint: true, date_atteint: today }).eq('id', id);
+  chargerObjectifs();
+  showToast('🌟 Objectif atteint !');
+}
+
+async function supprimerObjectif(id) {
+  if (!confirm('Supprimer cet objectif ?')) return;
+  await supabaseClient.from('objectifs').delete().eq('id', id);
+  chargerObjectifs();
+  showToast('🗑️ Objectif supprimé');
 }
 
 async function seDeconnecter() {
