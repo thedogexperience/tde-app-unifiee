@@ -552,6 +552,7 @@
       <!-- Sous-onglets -->
       <div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px">
         <button class="btn btn-primary" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('journal')">📓 Journal</button>
+        <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('fiches-client')">📚 Fiches</button>
         <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('rdv')">📅 RDV</button>
         <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('forfaits')">🎟️ Forfaits</button>
         <button class="btn btn-outline" style="font-size:12px;padding:8px 14px" onclick="afficherSousOnglet('sante')">🏥 Santé</button>
@@ -564,6 +565,36 @@
           <div class="card-title">📓 Journal (30 derniers jours)</div>
           <div id="journal-client-list"><div class="vide">Chargement…</div></div>
         </div>
+      </div>
+
+      <!-- Fiches client -->
+      <div id="sous-fiches-client" style="display:none">
+        <div class="card">
+          <div class="card-title">📚 Fiches envoyées
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" onclick="ouvrirModalEnvoiFicheClient()">+ Envoyer une fiche</button>
+          </div>
+          <input class="recherche" id="recherche-fiches-client" placeholder="🔍 Rechercher…" oninput="filtrerFichesClient()" style="margin-bottom:8px"/>
+          <div class="filtres" id="filtres-fiches-client" style="margin-bottom:10px">
+            <button class="filtre-btn active" onclick="setFiltreClient('',this)">Toutes</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Lien',this)">Lien</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Comportement',this)">Comportement</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Réactivité',this)">Réactivité</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Sensibilité',this)">Sensibilité</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Sommeil',this)">Sommeil</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Socialisation',this)">Socialisation</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Quotidien',this)">Quotidien</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Santé',this)">Santé</button>
+          </div>
+          <div id="fiches-client-envoyees"><div class="vide">Aucune fiche envoyée</div></div>
+        </div>
+
+        <!-- Modal sélection fiche à envoyer -->
+        <div class="card">
+          <div class="card-title">📬 Envoyer une nouvelle fiche</div>
+          <input class="recherche" id="recherche-fiches-dispo" placeholder="🔍 Rechercher une fiche à envoyer…" oninput="filtrerFichesDispo()"/>
+          <div id="fiches-dispo-list"><div class="vide">Chargement…</div></div>
+        </div>
+        <div id="modal-envoyer-fiche-client" style="display:none"></div>
       </div>
 
       <!-- RDV client -->
@@ -980,13 +1011,119 @@ function retourClients() {
 }
 
 function afficherSousOnglet(onglet) {
-  ['journal','rdv','forfaits','sante'].forEach(o => {
+  ['journal','fiches-client','rdv','forfaits','sante'].forEach(o => {
     document.getElementById('sous-' + o).style.display = o === onglet ? 'block' : 'none';
   });
   if (onglet === 'journal') chargerJournalClient();
+  if (onglet === 'fiches-client') chargerFichesClientEnvoyees();
   if (onglet === 'rdv') chargerRdvClient();
   if (onglet === 'forfaits') chargerForfaitsClient();
   if (onglet === 'sante') chargerSanteClient();
+}
+
+// ── Fiches client ──
+let filtreClientTheme = '';
+let fichesDispoListe = [];
+
+async function chargerFichesClientEnvoyees() {
+  if (!clientSelectionne) return;
+
+  // Fiches déjà envoyées
+  const { data: envoyees } = await supabaseClient.from('fiches_envoyees')
+    .select('*, fiches(*)').eq('user_id', clientSelectionne.id)
+    .order('envoyee_at', { ascending: false });
+
+  const c = document.getElementById('fiches-client-envoyees');
+  if (!envoyees || envoyees.length === 0) {
+    c.innerHTML = '<div class="vide">Aucune fiche envoyée pour l\'instant</div>';
+  } else {
+    c.innerHTML = '';
+    envoyees.forEach(fe => {
+      const f = fe.fiches;
+      if (!f) return;
+      const imgs = f.images_urls ? f.images_urls.split('|') : [];
+      const div = document.createElement('div');
+      div.className = 'fiche-item';
+      div.innerHTML = \`
+        \${imgs[0] ? \`<img class="fiche-thumb" src="\${imgs[0]}"/>\` : \`<div class="fiche-thumb-placeholder">📄</div>\`}
+        <div class="fiche-info">
+          <div class="fiche-titre-item">\${f.titre}</div>
+          <span class="fiche-theme-item">\${f.theme || '—'}</span>
+          <div class="fiche-profil-item">\${fe.vue ? '✅ Vue' : '🆕 Non vue'} · \${new Date(fe.envoyee_at).toLocaleDateString('fr-FR')}</div>
+        </div>
+        <button class="btn-icon btn-del" title="Retirer" onclick="retirerFicheClient('\${fe.id}')">🗑️</button>\`;
+      c.appendChild(div);
+    });
+  }
+
+  // Fiches disponibles à envoyer
+  const { data: toutes } = await supabaseClient.from('fiches').select('*').order('titre');
+  fichesDispoListe = toutes || [];
+  afficherFichesDispo(fichesDispoListe);
+}
+
+function filtrerFichesClient() {
+  const q = document.getElementById('recherche-fiches-client').value.toLowerCase();
+  // Re-charger avec filtre — simplement recharger tout
+  chargerFichesClientEnvoyees();
+}
+
+function setFiltreClient(theme, btn) {
+  filtreClientTheme = theme;
+  document.querySelectorAll('#filtres-fiches-client .filtre-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function filtrerFichesDispo() {
+  const q = document.getElementById('recherche-fiches-dispo').value.toLowerCase();
+  let liste = fichesDispoListe;
+  if (q) liste = liste.filter(f => f.titre.toLowerCase().includes(q) || (f.theme||'').toLowerCase().includes(q));
+  afficherFichesDispo(liste);
+}
+
+function afficherFichesDispo(liste) {
+  const c = document.getElementById('fiches-dispo-list');
+  if (!liste || liste.length === 0) { c.innerHTML = '<div class="vide">Aucune fiche trouvée</div>'; return; }
+  c.innerHTML = '';
+  liste.forEach(f => {
+    const imgs = f.images_urls ? f.images_urls.split('|') : [];
+    const div = document.createElement('div');
+    div.className = 'fiche-item';
+    div.style.cursor = 'pointer';
+    div.innerHTML = \`
+      \${imgs[0] ? \`<img class="fiche-thumb" src="\${imgs[0]}"/>\` : \`<div class="fiche-thumb-placeholder">📄</div>\`}
+      <div class="fiche-info">
+        <div class="fiche-titre-item">\${f.titre}</div>
+        <span class="fiche-theme-item">\${f.theme || '—'}</span>
+        <div class="fiche-profil-item">\${labelProfil(f.profil_cible)}</div>
+      </div>
+      <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;flex-shrink:0" onclick="envoyerFicheDirecte('\${f.id}')">📬 Envoyer</button>\`;
+    c.appendChild(div);
+  });
+}
+
+async function envoyerFicheDirecte(ficheId) {
+  if (!clientSelectionne) return;
+  const { error } = await supabaseClient.from('fiches_envoyees').insert({
+    user_id: clientSelectionne.id,
+    fiche_id: ficheId,
+    vue: false
+  });
+  if (error && error.code !== '23505') { showToast('❌ Erreur : ' + error.message); return; }
+  if (error && error.code === '23505') { showToast('⚠️ Fiche déjà envoyée à ce client'); return; }
+  chargerFichesClientEnvoyees();
+  showToast(\`✅ Fiche envoyée à \${clientSelectionne.prenom} !\`);
+}
+
+async function retirerFicheClient(feId) {
+  if (!confirm('Retirer cette fiche du compte client ?')) return;
+  await supabaseClient.from('fiches_envoyees').delete().eq('id', feId);
+  chargerFichesClientEnvoyees();
+  showToast('🗑️ Fiche retirée');
+}
+
+function ouvrirModalEnvoiFicheClient() {
+  document.getElementById('fiches-dispo-list').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function chargerJournalClient() {
