@@ -2146,21 +2146,21 @@ function genererChampsRapide() {
     let html = '<div class="choices-wrap">';
     saved.filter(s => !s.startsWith('custom:')).forEach(key => {
       const label = LABELS[key];
-      if (label) html += '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','' + key + '',this)">' + label + '</button>';
+      if (label) html += '<button class="choice-btn" onclick="window.toggleMulti(\'stress_rapide\',\'' + key + '\',this)">' + label + '</button>';
     });
     saved.filter(s => s.startsWith('custom:')).forEach(s => {
       const val = s.replace('custom:','');
-      html += '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','custom:' + val + '',this)">✏️ ' + val + '</button>';
+      html += '<button class="choice-btn" onclick="window.toggleMulti(\'stress_rapide\',\'custom:' + val + '\',this)">✏️ ' + val + '</button>';
     });
     html += '</div>';
     stress.innerHTML = html;
   } else if (profil.suivi_chiot) {
     stress.innerHTML =
       '<div class="choices-wrap">' +
-      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','mordillements',this)">🦷 Mordillements</button>' +
-      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','destruction',this)">🪑 Destruction</button>' +
-      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','agitation',this)">😵 Agitation</button>' +
-      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','sauts',this)">⬆️ Sauts</button>' +
+      '<button class="choice-btn" onclick="window.toggleMulti(\'stress_rapide\',\'mordillements\',this)">🦷 Mordillements</button>' +
+      '<button class="choice-btn" onclick="window.toggleMulti(\'stress_rapide\',\'destruction\',this)">🪑 Destruction</button>' +
+      '<button class="choice-btn" onclick="window.toggleMulti(\'stress_rapide\',\'agitation\',this)">😵 Agitation</button>' +
+      '<button class="choice-btn" onclick="window.toggleMulti(\'stress_rapide\',\'sauts\',this)">⬆️ Sauts</button>' +
       '</div>';
   } else {
     stress.innerHTML = '<div style="font-size:12px;color:#bbb;padding:8px 0">Configure tes comportements dans ⚙️ Profil</div>';
