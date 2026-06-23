@@ -1647,7 +1647,7 @@ async function chargerMessagesClient(userId) {
 }
 
 async function envoyerReponse() {
-  const userId = document.getElementById('select-client-msg').value;
+  const userId = clientMsgSelectionne?.id;
   const contenu = document.getElementById('msg-admin-input').value.trim();
   if (!userId || !contenu) return;
 
