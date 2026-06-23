@@ -1975,7 +1975,7 @@ async function chargerNotesSeance() {
         '<div style="font-size:12px;font-weight:700;color:#2BBFB0">' +
           new Date(n.date_seance).toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'}) +
         '</div>' +
-        '<button class="btn-icon btn-del" onclick="supprimerNote('' + n.id + '')" title="Supprimer">🗑️</button>' +
+        '<button class="btn-icon btn-del" onclick="supprimerNote(\'' + n.id + '\')" title="Supprimer">🗑️</button>' +
       '</div>' +
       '<div style="font-size:13px;color:#444;line-height:1.6;white-space:pre-wrap">' + n.contenu + '</div>';
     c.appendChild(div);
