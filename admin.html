@@ -998,30 +998,96 @@ async function chargerJournalClient() {
   const container = document.getElementById('journal-client-list');
   if (!data || data.length === 0) { container.innerHTML = '<div class="vide">Aucune entrée</div>'; return; }
 
+  const p = clientSelectionne;
   container.innerHTML = '';
   data.forEach(e => {
     const div = document.createElement('div');
     div.className = 'journal-entry';
     const d = new Date(e.date);
     let html = `<div class="je-date">${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+
+    // ── HUMAIN ──
+    html += `<div style="background:#f8f8f8;border-radius:8px;padding:10px;margin-bottom:8px">`;
+    html += `<div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;text-transform:uppercase">🧑 État humain</div>`;
     html += '<div class="je-grid">';
-    if (e.humain_etat) html += `<div class="je-item"><span class="je-label">Humain </span><span class="e-${e.humain_etat}">${labelEtat(e.humain_etat)}</span></div>`;
-    if (e.humeur) html += `<div class="je-item"><span class="je-label">Humeur </span><span class="e-${e.humeur}">${labelEtat(e.humeur)}</span></div>`;
-    if (e.emotion_maison) html += `<div class="je-item"><span class="je-label">Maison </span><span class="e-${e.emotion_maison}">${labelEtat(e.emotion_maison)}</span></div>`;
-    if (e.emotion_exterieur) html += `<div class="je-item"><span class="je-label">Extérieur </span><span class="e-${e.emotion_exterieur}">${labelEtat(e.emotion_exterieur)}</span></div>`;
-    if (e.charge_allostatique) html += `<div class="je-item"><span class="je-label">Charge </span>${e.charge_allostatique}/10</div>`;
-    if (e.aboiements) html += `<div class="je-item"><span class="je-label">Aboiements </span>${e.aboiements}</div>`;
-    const declTotal = (e.decl_chiens||0)+(e.decl_humains||0)+(e.decl_voitures||0)+(e.decl_velos||0)+(e.decl_bruits||0)+(e.decl_autres_count||0);
-    if (declTotal > 0) html += `<div class="je-item"><span class="je-label">Déclenchements </span>${declTotal}</div>`;
-    if (e.intensite_reaction) html += `<div class="je-item"><span class="je-label">Intensité </span>${labelEtat(e.intensite_reaction)}</div>`;
-    if (e.anxiete_separation) html += `<div class="je-item"><span class="je-label">Anxiété sépa. </span>⚠️ Oui</div>`;
-    if (e.mise_au_vert) html += `<div class="je-item"><span class="je-label">Mise au vert </span>✅</div>`;
+    if (e.humain_etat) html += `<div class="je-item"><span class="je-label">État </span><span class="e-${e.humain_etat}">${labelEtat(e.humain_etat)}</span></div>`;
     html += '</div>';
-    if (e.note_libre) html += `<div class="je-note">💬 ${e.note_libre}</div>`;
-    if (e.humain_note_libre) html += `<div class="je-note">🧑 ${e.humain_note_libre}</div>`;
+    if (e.humain_note_libre) html += `<div class="je-note" style="margin-top:4px">💬 ${e.humain_note_libre}</div>`;
+    html += '</div>';
+
+    // ── CHIOT ──
+    if (p.suivi_chiot) {
+      html += `<div style="background:#fef9e7;border-radius:8px;padding:10px;margin-bottom:8px">`;
+      html += `<div style="font-size:11px;font-weight:700;color:#b8960a;margin-bottom:6px;text-transform:uppercase">🐶 Suivi Chiot</div>`;
+      html += '<div class="je-grid">';
+      if (e.humeur) html += `<div class="je-item"><span class="je-label">Humeur </span><span class="e-${e.humeur}">${labelEtat(e.humeur)}</span></div>`;
+      if (e.energie_fin_journee) html += `<div class="je-item"><span class="je-label">Énergie </span>${labelEtat(e.energie_fin_journee)}</div>`;
+      if (e.heures_nuit) html += `<div class="je-item"><span class="je-label">Nuit </span>${e.heures_nuit}h</div>`;
+      if (e.heures_siestes) html += `<div class="je-item"><span class="je-label">Siestes </span>${e.heures_siestes}h</div>`;
+      if (e.sorties != null) html += `<div class="je-item"><span class="je-label">Sorties </span>${e.sorties}</div>`;
+      if (e.humains_rencontres != null) html += `<div class="je-item"><span class="je-label">Humains rencontrés </span>${e.humains_rencontres}</div>`;
+      if (e.chiens_rencontres != null) html += `<div class="je-item"><span class="je-label">Chiens rencontrés </span>${e.chiens_rencontres}</div>`;
+      if (e.dort_avec_chiot) html += `<div class="je-item"><span class="je-label">Dort avec </span>✅ Oui</div>`;
+      if (e.solitude_en_cours) html += `<div class="je-item"><span class="je-label">Solitude </span>✅ En cours${e.solitude_duree ? ' ('+e.solitude_duree+' min)' : ''}</div>`;
+      if (e.proprete) html += `<div class="je-item"><span class="je-label">Propreté </span>${labelNiveau(e.proprete)}</div>`;
+      if (e.destruction_chiot) html += `<div class="je-item"><span class="je-label">Destruction </span>${labelNiveau(e.destruction_chiot)}</div>`;
+      if (e.mordillements) html += `<div class="je-item"><span class="je-label">Mordillements </span>${labelNiveau(e.mordillements)}${e.contexte_mordillements ? ' ('+e.contexte_mordillements+')' : ''}</div>`;
+      if (e.sauts) html += `<div class="je-item"><span class="je-label">Sauts </span>${labelNiveau(e.sauts)}</div>`;
+      html += '</div>';
+      if (e.activites) html += `<div class="je-note" style="margin-top:4px">🎯 Activités : ${e.activites}</div>`;
+      if (e.decouvertes) html += `<div class="je-note">🌍 Découvertes : ${e.decouvertes}</div>`;
+      html += '</div>';
+    }
+
+    // ── SENSIBLE ──
+    if (p.suivi_sensible) {
+      html += `<div style="background:#f3e8ff;border-radius:8px;padding:10px;margin-bottom:8px">`;
+      html += `<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px;text-transform:uppercase">🌸 Suivi Sensible</div>`;
+      html += '<div class="je-grid">';
+      if (e.emotion_maison) html += `<div class="je-item"><span class="je-label">Maison </span><span class="e-${e.emotion_maison}">${labelEtat(e.emotion_maison)}</span></div>`;
+      if (e.emotion_exterieur) html += `<div class="je-item"><span class="je-label">Extérieur </span><span class="e-${e.emotion_exterieur}">${labelEtat(e.emotion_exterieur)}</span></div>`;
+      if (e.charge_allostatique != null) html += `<div class="je-item"><span class="je-label">Charge allost. </span><strong>${e.charge_allostatique}/10</strong></div>`;
+      if (e.stimuli_sensible) html += `<div class="je-item"><span class="je-label">Stimuli </span>${e.stimuli_sensible}</div>`;
+      if (e.mise_au_vert) html += `<div class="je-item"><span class="je-label">Mise au vert </span>✅</div>`;
+      if (e.anxiete_separation) html += `<div class="je-item"><span class="je-label">Anxiété sépa. </span>⚠️ Oui</div>`;
+      if (e.hypervigileance) html += `<div class="je-item"><span class="je-label">Hypervigilance </span>⚠️ Oui</div>`;
+      if (e.inhibition) html += `<div class="je-item"><span class="je-label">Inhibition </span>⚠️ Oui</div>`;
+      if (e.malproprete) html += `<div class="je-item"><span class="je-label">Malpropreté </span>⚠️ Oui</div>`;
+      if (e.destruction_sensible) html += `<div class="je-item"><span class="je-label">Destruction </span>${labelNiveau(e.destruction_sensible)}</div>`;
+      html += '</div>';
+      if (e.anxiete_separation_note) html += `<div class="je-note" style="margin-top:4px">📝 ${e.anxiete_separation_note}</div>`;
+      html += '</div>';
+    }
+
+    // ── RÉACTIF ──
+    if (p.suivi_reactif) {
+      html += `<div style="background:#fff0f0;border-radius:8px;padding:10px;margin-bottom:8px">`;
+      html += `<div style="font-size:11px;font-weight:700;color:#e05555;margin-bottom:6px;text-transform:uppercase">⚡ Suivi Réactif</div>`;
+      html += '<div class="je-grid">';
+      if (e.decl_chiens != null) html += `<div class="je-item"><span class="je-label">🐕 Chiens </span>${e.decl_chiens}</div>`;
+      if (e.decl_humains != null) html += `<div class="je-item"><span class="je-label">🧍 Humains </span>${e.decl_humains}</div>`;
+      if (e.decl_voitures != null) html += `<div class="je-item"><span class="je-label">🚗 Voitures </span>${e.decl_voitures}</div>`;
+      if (e.decl_velos != null) html += `<div class="je-item"><span class="je-label">🚲 Vélos </span>${e.decl_velos}</div>`;
+      if (e.decl_bruits != null) html += `<div class="je-item"><span class="je-label">🔊 Bruits </span>${e.decl_bruits}</div>`;
+      if (e.decl_autres_count != null) html += `<div class="je-item"><span class="je-label">✏️ Autres </span>${e.decl_autres_count}</div>`;
+      if (e.aboiements) html += `<div class="je-item"><span class="je-label">Aboiements </span>${e.aboiements}</div>`;
+      if (e.intensite_reaction) html += `<div class="je-item"><span class="je-label">Intensité </span>${labelEtat(e.intensite_reaction)}</div>`;
+      if (e.mise_au_vert) html += `<div class="je-item"><span class="je-label">Mise au vert </span>✅</div>`;
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // ── NOTE LIBRE ──
+    if (e.note_libre) html += `<div class="je-note" style="background:#e8f8f7;border-radius:8px;padding:8px;margin-top:4px">💬 ${e.note_libre}</div>`;
+
     div.innerHTML = html;
     container.appendChild(div);
   });
+}
+
+function labelNiveau(val) {
+  const n = { aucun:'✅ Aucun', un_peu:'🟡 Un peu', beaucoup:'🔴 Beaucoup' };
+  return n[val] || val;
 }
 
 function labelEtat(val) {
@@ -1286,13 +1352,12 @@ async function envoyerReponse() {
 
   // Notifier le client par email
   const client = tousClients.find(c => c.id === userId);
-  if (client) {
-    const { data: userData } = await supabaseClient.auth.admin?.getUserById?.(userId) || { data: null };
+  if (client && client.email) {
     try {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
         client_prenom: client.prenom,
         chien_nom: client.nom_chien,
-        client_email: userData?.user?.email || '',
+        client_email: client.email,
         message: contenu
       });
     } catch(e) { console.warn('Email non envoyé', e); }
