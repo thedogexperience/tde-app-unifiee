@@ -1139,7 +1139,7 @@ function genererCompteursDecl(p) {
 }
 
 // ── Sélections formulaire ──
-function selectEmotion(champ, val, btn) {
+window.selectEmotion = function(champ, val, btn) {
   const parent = btn.closest('.emotion-grid');
   parent.querySelectorAll('.emotion-btn').forEach(b => b.className = 'emotion-btn');
   const classes = { serein:'selected-vert', bien:'selected-vert', tres_bien:'selected-vert',
@@ -1151,7 +1151,7 @@ function selectEmotion(champ, val, btn) {
   donnees[champ] = val;
 }
 
-function selectChoice(champ, val, btn) {
+window.selectChoice = function(champ, val, btn) {
   const parent = btn.closest('.choices-wrap');
   parent.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected','selected-rouge'));
   btn.classList.add(['beaucoup','intense','tres_intense'].includes(val) ? 'selected-rouge' : 'selected');
@@ -1161,7 +1161,7 @@ function selectChoice(champ, val, btn) {
   }
 }
 
-function toggleMulti(champ, val, btn) {
+window.toggleMulti = function(champ, val, btn) {
   if (!multiSelects[champ]) multiSelects[champ] = new Set();
   if (multiSelects[champ].has(val)) {
     multiSelects[champ].delete(val);
@@ -1172,32 +1172,32 @@ function toggleMulti(champ, val, btn) {
   }
 }
 
-function modifCompteur(champ, delta) {
+window.modifCompteur = function(champ, delta) {
   compteurs[champ] = Math.max(0, (compteurs[champ] || 0) + delta);
   document.getElementById('val-' + champ).textContent = compteurs[champ];
 }
 
-function modifCompteurDecl(key, delta) {
+window.modifCompteurDecl = function(key, delta) {
   compteursDecl[key] = Math.max(0, (compteursDecl[key] || 0) + delta);
   document.getElementById('val-decl-' + key).textContent = compteursDecl[key];
 }
 
-function toggleSection(id) {
+window.toggleSection = function(id) {
   const el = document.getElementById(id);
   const btn = el.previousElementSibling;
   el.classList.toggle('open');
   btn.querySelector('span:last-child').textContent = el.classList.contains('open') ? '▲' : '▼';
 }
 
-function toggleSolitudeDuree() {
+window.toggleSolitudeDuree = function() {
   document.getElementById('solitude-duree-wrap').style.display =
     document.getElementById('solitude_en_cours').checked ? 'block' : 'none';
 }
-function toggleAnxieteNote() {
+window.toggleAnxieteNote = function() {
   document.getElementById('anxiete-note-wrap').style.display =
     document.getElementById('anxiete_separation').checked ? 'block' : 'none';
 }
-function toggleSymptome(val, btn) {
+window.toggleSymptome = function(val, btn) {
   if (symptomesActifs.has(val)) { symptomesActifs.delete(val); btn.classList.remove('selected'); }
   else { symptomesActifs.add(val); btn.classList.add('selected'); }
 }
@@ -1249,32 +1249,108 @@ async function chargerBandeaux() {
 async function chargerJournal() {
   const { data } = await supabaseClient.from('journal')
     .select('*').eq('user_id', userId).eq('date', dateSelectionnee).single();
+
+  // Reset visuel complet
+  document.querySelectorAll('.emotion-btn').forEach(b => b.className = 'emotion-btn');
+  document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected','selected-rouge'));
+  document.querySelectorAll('.toggle input[type="checkbox"]').forEach(cb => cb.checked = false);
+  multiSelects = { activites: new Set(), decouvertes: new Set() };
+  compteurs = { stimuli_sensible: 0, aboiements: 0 };
+  symptomesActifs = new Set();
+
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+  const setChecked = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+  const setCompteur = (champ, val) => {
+    compteurs[champ] = val || 0;
+    const el = document.getElementById('val-' + champ);
+    if (el) el.textContent = compteurs[champ];
+  };
+  const setCompteurDecl = (key, val) => {
+    if (val == null) return;
+    compteursDecl[key] = val;
+    const el = document.getElementById('val-decl-' + key);
+    if (el) el.textContent = val;
+  };
+
   if (data) {
     donnees = { ...data };
-    // Remplir les champs visuels
+
+    // Humain
     if (data.humain_etat) {
-      const btn = document.querySelector(`[data-val="${data.humain_etat}"]`);
-      if (btn) { const ev = { closest: (s) => btn.closest(s) }; selectEmotion('humain_etat', data.humain_etat, btn); }
+      const btn = document.querySelector('[data-val="' + data.humain_etat + '"]');
+      if (btn) window.selectEmotion('humain_etat', data.humain_etat, btn);
     }
-    if (data.note_libre) document.getElementById('note_libre').value = data.note_libre;
-    if (data.humain_note) document.getElementById('humain_note').value = data.humain_note;
-    if (data.charge_allostatique !== null && data.charge_allostatique !== undefined) {
-      document.getElementById('charge_allostatique').value = data.charge_allostatique;
-      document.getElementById('charge-val').textContent = data.charge_allostatique;
+    setVal('humain_note', data.humain_note_libre);
+    setVal('note_libre', data.note_libre);
+
+    // Chiot
+    setVal('heures_nuit', data.heures_nuit);
+    setVal('heures_siestes', data.heures_siestes);
+    setVal('sorties', data.sorties);
+    setVal('humains_rencontres', data.humains_rencontres);
+    setVal('chiens_rencontres', data.chiens_rencontres);
+    setChecked('dort_avec_chiot', data.dort_avec_chiot);
+    setChecked('solitude_en_cours', data.solitude_en_cours);
+    if (data.solitude_en_cours) {
+      const wrap = document.getElementById('solitude-duree-wrap');
+      if (wrap) wrap.style.display = 'block';
+      setVal('solitude_duree', data.solitude_duree);
     }
-    if (data.stimuli_sensible) { compteurs.stimuli_sensible = data.stimuli_sensible; document.getElementById('val-stimuli_sensible').textContent = data.stimuli_sensible; }
-    if (data.aboiements) { compteurs.aboiements = data.aboiements; document.getElementById('val-aboiements').textContent = data.aboiements; }
+    if (data.activites) {
+      data.activites.split(', ').forEach(v => {
+        multiSelects.activites.add(v);
+        const btn = document.querySelector('[onclick*="toggleMulti"][onclick*="activites"][onclick*="' + v + '"]');
+        if (btn) btn.classList.add('selected');
+      });
+    }
+
+    // Sensible
+    if (data.charge_allostatique != null) {
+      const slider = document.getElementById('charge_allostatique');
+      if (slider) { slider.value = data.charge_allostatique; document.getElementById('charge-val').textContent = data.charge_allostatique; }
+    }
+    setVal('sommeil_chien_nuit', data.sommeil_chien_nuit);
+    setVal('sommeil_chien_siestes', data.sommeil_chien_siestes);
+    setCompteur('stimuli_sensible', data.stimuli_sensible);
+    setChecked('mise_au_vert', data.mise_au_vert);
+    setChecked('malproprete', data.malproprete);
+    setChecked('hypervigileance', data.hypervigileance);
+
+    // Comportements dynamiques
+    if (data.comportements_jour) {
+      data.comportements_jour.split(',').forEach(key => {
+        const cleanKey = key.startsWith('custom:') ? 'custom-' + key.replace('custom:','') : key;
+        const el = document.getElementById('comp-' + cleanKey);
+        if (el) el.checked = true;
+      });
+    }
+    if (data.anxiete_separation) {
+      setChecked('comp-anxiete_separation', true);
+      const noteWrap = document.getElementById('anxiete-note-wrap');
+      if (noteWrap) noteWrap.style.display = 'block';
+      setVal('anxiete_separation_note', data.anxiete_separation_note);
+    }
+
+    // Reactif
+    setCompteur('aboiements', data.aboiements);
+    setCompteurDecl('chiens', data.decl_chiens);
+    setCompteurDecl('humains', data.decl_humains);
+    setCompteurDecl('voitures', data.decl_voitures);
+    setCompteurDecl('velos', data.decl_velos);
+    setCompteurDecl('bruits', data.decl_bruits);
+    setCompteurDecl('autres', data.decl_autres_count);
+    setChecked('mise_au_vert_reactif', data.mise_au_vert);
+
   } else {
     donnees = {};
-    document.getElementById('note_libre').value = '';
-    document.getElementById('humain_note').value = '';
-    compteurs = { stimuli_sensible: 0, aboiements: 0 };
-    if (document.getElementById('val-stimuli_sensible')) document.getElementById('val-stimuli_sensible').textContent = 0;
-    if (document.getElementById('val-aboiements')) document.getElementById('val-aboiements').textContent = 0;
-    if (document.getElementById('charge_allostatique')) {
-      document.getElementById('charge_allostatique').value = 0;
-      document.getElementById('charge-val').textContent = 0;
-    }
+    setVal('note_libre', '');
+    setVal('humain_note', '');
+    const slider = document.getElementById('charge_allostatique');
+    if (slider) { slider.value = 0; document.getElementById('charge-val').textContent = 0; }
+    const vs = document.getElementById('val-stimuli_sensible');
+    const va = document.getElementById('val-aboiements');
+    if (vs) vs.textContent = 0;
+    if (va) va.textContent = 0;
   }
 }
 
