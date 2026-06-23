@@ -1,0 +1,22 @@
+{
+  "name": "The Dog Experience",
+  "short_name": "TDE Journal",
+  "description": "Mon journal de suivi comportemental",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2BBFB0",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/rq4rDYi.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.imgur.com/rq4rDYi.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
