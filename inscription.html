@@ -521,6 +521,7 @@ async function creerCompte() {
   // 2. Créer le profil
   const { error: profileError } = await supabaseClient.from('profiles').insert({
     id: userId,
+    email,
     prenom,
     nom_chien,
     date_naissance_chien: naissance,
