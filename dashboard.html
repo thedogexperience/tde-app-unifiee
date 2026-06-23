@@ -1745,9 +1745,9 @@ function genererComportementsSensible(p) {
       const niveauDiv = document.createElement('div');
       niveauDiv.innerHTML =
         '<div class="choices-wrap" style="margin:6px 0 10px">' +
-          '<button class="choice-btn" onclick="selectChoice('destruction_sensible','aucun',this)">✅ Aucune</button>' +
-          '<button class="choice-btn" onclick="selectChoice('destruction_sensible','un_peu',this)">🟡 Un peu</button>' +
-          '<button class="choice-btn" onclick="selectChoice('destruction_sensible','beaucoup',this)">🔴 Beaucoup</button>' +
+          '<button class="choice-btn" onclick="window.selectChoice(\'destruction_sensible\',\'aucun\',this)">✅ Aucune</button>' +
+          '<button class="choice-btn" onclick="window.selectChoice(\'destruction_sensible\',\'un_peu\',this)">🟡 Un peu</button>' +
+          '<button class="choice-btn" onclick="window.selectChoice(\'destruction_sensible\',\'beaucoup\',this)">🔴 Beaucoup</button>' +
         '</div>';
       wrap.appendChild(niveauDiv);
     }
