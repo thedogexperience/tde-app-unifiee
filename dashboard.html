@@ -1176,7 +1176,7 @@ async function init() {
 }
 
 // ── Navigation ──
-function afficherPage(page) {
+window.afficherPage = function(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
@@ -2099,18 +2099,18 @@ function genererChampsRapide() {
   if (profil.suivi_chiot) {
     emotionChien.innerHTML =
       '<div class="emotion-grid">' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','tres_bien',this)">🌟 Très bien</button>' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','bien',this)">😊 Bien</button>' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','moyen',this)">😐 Moyen</button>' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','difficile',this)">😟 Difficile</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'humeur\',\'tres_bien\',this)">🌟 Très bien</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'humeur\',\'bien\',this)">😊 Bien</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'humeur\',\'moyen\',this)">😐 Moyen</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'humeur\',\'difficile\',this)">😟 Difficile</button>' +
       '</div>';
   } else {
     emotionChien.innerHTML =
       '<div class="emotion-grid">' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','serein',this)">😌 Serein</button>' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','peu_tendu',this)">😕 Peu tendu</button>' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','stresse',this)">😰 Stressé</button>' +
-      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','anxieux',this)">😱 Anxieux</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'emotion_maison\',\'serein\',this)">😌 Serein</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'emotion_maison\',\'peu_tendu\',this)">😕 Peu tendu</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'emotion_maison\',\'stresse\',this)">😰 Stressé</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion(\'emotion_maison\',\'anxieux\',this)">😱 Anxieux</button>' +
       '</div>';
   }
 
