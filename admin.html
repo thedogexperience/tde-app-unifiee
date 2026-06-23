@@ -1150,9 +1150,14 @@ function ouvrirModalEnvoiFicheClient() {
 
 async function chargerJournalClient() {
   if (!clientSelectionne) return;
-  const { data } = await supabaseClient.from('journal')
-    .select('*').eq('user_id', clientSelectionne.id)
-    .order('date', { ascending: false }).limit(30);
+  const [{ data }, { data: santeData }] = await Promise.all([
+    supabaseClient.from('journal').select('*').eq('user_id', clientSelectionne.id).order('date', { ascending: false }).limit(30),
+    supabaseClient.from('sante').select('*').eq('user_id', clientSelectionne.id).order('date', { ascending: false }).limit(30)
+  ]);
+
+  // Index santé par date
+  const santeParDate = {};
+  (santeData || []).forEach(s => { santeParDate[s.date] = s; });
 
   const container = document.getElementById('journal-client-list');
   if (!data || data.length === 0) { container.innerHTML = '<div class="vide">Aucune entrée</div>'; return; }
@@ -1257,6 +1262,18 @@ async function chargerJournalClient() {
 
     // ── NOTE LIBRE ──
     if (e.note_libre) html += `<div class="je-note" style="background:#e8f8f7;border-radius:8px;padding:8px;margin-top:4px">💬 ${e.note_libre}</div>`;
+
+    // ── SANTÉ ──
+    const sante = santeParDate[e.date];
+    if (sante && (sante.symptomes || sante.symptomes_note || sante.traitement_nom)) {
+      html += '<div style="background:#fff0f0;border-radius:8px;padding:10px;margin-top:6px;border-left:3px solid #e05555">';
+      html += '<div style="font-size:11px;font-weight:700;color:#e05555;margin-bottom:4px;text-transform:uppercase">🏥 Santé</div>';
+      if (sante.symptomes) html += '<div style="font-size:12px;color:#e05555;font-weight:600">🔍 ' + sante.symptomes + '</div>';
+      if (sante.symptomes_note) html += '<div style="font-size:12px;color:#555;margin-top:2px">' + sante.symptomes_note + '</div>';
+      if (sante.traitement_nom) html += '<div style="font-size:12px;color:#444;margin-top:4px">💊 ' + sante.traitement_nom + '</div>';
+      if (sante.note_sante) html += '<div style="font-size:12px;color:#888;font-style:italic;margin-top:2px">' + sante.note_sante + '</div>';
+      html += '</div>';
+    }
 
     div.innerHTML = html;
     container.appendChild(div);
