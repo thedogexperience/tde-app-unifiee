@@ -585,6 +585,9 @@
   <div class="nav-tab" onclick="afficherPage('suivi')" id="tab-suivi">
     <span class="tab-icon">📅</span>Suivi
   </div>
+  <div class="nav-tab" onclick="afficherPage('profil')" id="tab-profil">
+    <span class="tab-icon">⚙️</span>Profil
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════
@@ -772,6 +775,18 @@
         <div class="slider-val" id="charge-val">0</div>
       </div>
 
+      <label class="form-label">Sommeil du chien</label>
+      <div style="display:flex;gap:10px;margin-bottom:4px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Heures de nuit</div>
+          <input type="number" id="sommeil_chien_nuit" min="0" max="24" step="0.5" placeholder="ex: 10"/>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Heures de siestes</div>
+          <input type="number" id="sommeil_chien_siestes" min="0" max="20" step="0.5" placeholder="ex: 4"/>
+        </div>
+      </div>
+
       <label class="form-label">Stimuli rencontrés</label>
       <div class="compteur-row">
         <span class="compteur-label">Nombre de stimuli</span>
@@ -782,38 +797,7 @@
         </div>
       </div>
 
-      <button class="section-toggle-btn" onclick="toggleSection('comportements-sensible')">
-        Comportements sensible <span>▼</span>
-      </button>
-      <div class="section-collapsible" id="comportements-sensible">
-        <div class="toggle-row">
-          <span class="toggle-label">Anxiété de séparation</span>
-          <label class="toggle"><input type="checkbox" id="anxiete_separation" onchange="toggleAnxieteNote()"/><span class="toggle-slider"></span></label>
-        </div>
-        <div id="anxiete-note-wrap" style="display:none;padding:6px 0">
-          <textarea id="anxiete_separation_note" placeholder="Décris ce que tu as observé…" rows="2"></textarea>
-        </div>
-
-        <div class="toggle-row">
-          <span class="toggle-label">Hypervigilance</span>
-          <label class="toggle"><input type="checkbox" id="hypervigileance"/><span class="toggle-slider"></span></label>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Inhibition / blocages</span>
-          <label class="toggle"><input type="checkbox" id="inhibition"/><span class="toggle-slider"></span></label>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Malpropreté</span>
-          <label class="toggle"><input type="checkbox" id="malproprete"/><span class="toggle-slider"></span></label>
-        </div>
-
-        <label class="form-label" style="margin-top:10px">Destruction</label>
-        <div class="choices-wrap">
-          <button class="choice-btn" onclick="selectChoice('destruction_sensible','aucun',this)">✅ Aucune</button>
-          <button class="choice-btn" onclick="selectChoice('destruction_sensible','un_peu',this)">🟡 Un peu</button>
-          <button class="choice-btn" onclick="selectChoice('destruction_sensible','beaucoup',this)">🔴 Beaucoup</button>
-        </div>
-      </div>
+      <div id="comportements-sensible-dynamiques"></div>
     </div>
   </div>
 
@@ -980,6 +964,49 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════
+     PAGE PROFIL
+══════════════════════════════════════════════ -->
+<div class="page" id="page-profil">
+  <div style="padding-top:12px">
+
+    <!-- Déclencheurs réactivité -->
+    <div id="section-profil-reactif" style="display:none">
+      <div class="card">
+        <div class="card-title">⚡ Mes déclencheurs</div>
+        <p style="font-size:12px;color:#888;margin-bottom:14px">Coche uniquement ceux qui concernent ton chien. Le journal s'adaptera automatiquement.</p>
+        <div id="profil-declencheurs"></div>
+        <label class="form-label" style="margin-top:10px">Autres déclencheurs</label>
+        <input type="text" id="profil-decl-autres" placeholder="ex: chats, motos…"/>
+        <button class="btn-save" onclick="sauvegarderDeclencheurs()" style="margin-top:14px">✅ Enregistrer</button>
+      </div>
+    </div>
+
+    <!-- Comportements sensible -->
+    <div id="section-profil-sensible" style="display:none">
+      <div class="card">
+        <div class="card-title">🌸 Mes comportements à suivre</div>
+        <p style="font-size:12px;color:#888;margin-bottom:14px">Coche les comportements que tu observes. Tu peux modifier cette liste à tout moment.</p>
+        <div class="choices-wrap" id="profil-comportements"></div>
+        <label class="form-label" style="margin-top:14px">Ajouter un comportement personnalisé</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="profil-comportement-custom" placeholder="ex: mâchonnements, grattage…" style="flex:1;margin:0"/>
+          <button class="btn btn-primary" style="padding:10px 14px;font-size:13px" onclick="ajouterComportementCustom()">+</button>
+        </div>
+        <div id="profil-comportements-custom" style="margin-top:10px"></div>
+        <button class="btn-save" onclick="sauvegarderComportements()" style="margin-top:14px">✅ Enregistrer</button>
+      </div>
+    </div>
+
+    <!-- Infos compte -->
+    <div class="card">
+      <div class="card-title">👤 Mon compte</div>
+      <div id="profil-infos" style="font-size:14px;color:#555;line-height:1.8"></div>
+    </div>
+
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -1018,7 +1045,10 @@ async function init() {
 
   // Afficher sections selon profil
   if (p.suivi_chiot) document.getElementById('section-chiot').style.display = 'block';
-  if (p.suivi_sensible) document.getElementById('section-sensible').style.display = 'block';
+  if (p.suivi_sensible) {
+    document.getElementById('section-sensible').style.display = 'block';
+    genererComportementsSensible(p);
+  }
   if (p.suivi_reactif) {
     document.getElementById('section-reactif').style.display = 'block';
     genererCompteursDecl(p);
@@ -1035,6 +1065,7 @@ async function init() {
   chargerSante();
   chargerRdvForfaits();
   verifierMessagesNonLus();
+  chargerProfil();
 }
 
 // ── Navigation ──
@@ -1247,6 +1278,22 @@ async function chargerJournal() {
   }
 }
 
+function collecterComportementsDynamiques() {
+  const actifs = [];
+  const saved = profil.comportements_sensible ? profil.comportements_sensible.split(',').filter(Boolean) : [];
+  const standards = saved.filter(s => !s.startsWith('custom:'));
+  const customs = saved.filter(s => s.startsWith('custom:')).map(s => s.replace('custom:',''));
+  standards.forEach(key => {
+    const el = document.getElementById('comp-' + key);
+    if (el && el.checked) actifs.push(key);
+  });
+  customs.forEach((val, i) => {
+    const el = document.getElementById('comp-custom-' + i);
+    if (el && el.checked) actifs.push('custom:' + val);
+  });
+  return actifs.length > 0 ? actifs.join(',') : null;
+}
+
 async function enregistrerJournal() {
   const btn = document.getElementById('btn-save');
   btn.disabled = true; btn.textContent = 'Enregistrement…';
@@ -1280,13 +1327,15 @@ async function enregistrerJournal() {
     emotion_exterieur: donnees.emotion_exterieur || null,
     mise_au_vert: document.getElementById('mise_au_vert')?.checked || false,
     charge_allostatique: parseInt(document.getElementById('charge_allostatique')?.value) || 0,
+    sommeil_chien_nuit: parseFloat(document.getElementById('sommeil_chien_nuit')?.value) || null,
+    sommeil_chien_siestes: parseFloat(document.getElementById('sommeil_chien_siestes')?.value) || null,
     stimuli_sensible: compteurs.stimuli_sensible,
-    anxiete_separation: document.getElementById('anxiete_separation')?.checked || false,
+    anxiete_separation: document.getElementById('comp-anxiete_separation')?.checked || false,
     anxiete_separation_note: document.getElementById('anxiete_separation_note')?.value || null,
-    hypervigileance: document.getElementById('hypervigileance')?.checked || false,
-    inhibition: document.getElementById('inhibition')?.checked || false,
-    malproprete: document.getElementById('malproprete')?.checked || false,
+    hypervigileance: document.getElementById('comp-hypervigilance')?.checked || false,
+    malproprete: document.getElementById('comp-malproprete')?.checked || false,
     destruction_sensible: donnees.destruction_sensible || null,
+    comportements_jour: collecterComportementsDynamiques(),
     // Réactif
     aboiements: compteurs.aboiements,
     intensite_reaction: donnees.intensite_reaction || null,
@@ -1562,6 +1611,228 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('visible');
   setTimeout(() => t.classList.remove('visible'), 2800);
+}
+
+// ── Comportements sensible dynamiques ──
+const COMPORTEMENTS_LABELS = {
+  hypervigilance: '👁️ Hypervigilance',
+  peurs: '😨 Peurs',
+  anxiete_separation: '😰 Anxiété de séparation',
+  malproprete: '💧 Malpropreté',
+  destruction: '🪑 Destruction',
+  vocalises: '🗣️ Vocalises/gémissements',
+  lechages: '👅 Léchages compulsifs',
+  stereotypies: '🔄 Stéréotypies',
+  fugue: '🏃 Fugue/tentatives de fuite',
+  agression: '⚠️ Agression',
+  agression_redirigee: '↩️ Agression redirigée',
+};
+
+function genererComportementsSensible(p) {
+  const wrap = document.getElementById('comportements-sensible-dynamiques');
+  wrap.innerHTML = '';
+
+  const saved = p.comportements_sensible ? p.comportements_sensible.split(',').filter(Boolean) : Object.keys(COMPORTEMENTS_LABELS);
+  const standards = saved.filter(s => !s.startsWith('custom:'));
+  const customs = saved.filter(s => s.startsWith('custom:')).map(s => s.replace('custom:',''));
+
+  if (saved.length === 0) {
+    wrap.innerHTML = '<div style="font-size:12px;color:#bbb;text-align:center;padding:10px">Aucun comportement configuré — va dans ⚙️ Profil pour les définir</div>';
+    return;
+  }
+
+  // Comportements standards
+  standards.forEach(key => {
+    const label = COMPORTEMENTS_LABELS[key];
+    if (!label) return;
+    const row = document.createElement('div');
+    row.className = 'toggle-row';
+    row.innerHTML =
+      '<span class="toggle-label">' + label + '</span>' +
+      '<label class="toggle"><input type="checkbox" id="comp-' + key + '"/><span class="toggle-slider"></span></label>';
+    wrap.appendChild(row);
+    // Note libre pour anxiété séparation
+    if (key === 'anxiete_separation') {
+      const noteDiv = document.createElement('div');
+      noteDiv.id = 'anxiete-note-wrap';
+      noteDiv.style.display = 'none';
+      noteDiv.style.padding = '6px 0';
+      noteDiv.innerHTML = '<textarea id="anxiete_separation_note" placeholder="Décris ce que tu as observé…" rows="2"></textarea>';
+      wrap.appendChild(noteDiv);
+      document.getElementById('comp-anxiete_separation') && 
+        document.getElementById('comp-anxiete_separation').addEventListener('change', function() {
+          noteDiv.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    // Niveau pour destruction
+    if (key === 'destruction') {
+      const niveauDiv = document.createElement('div');
+      niveauDiv.innerHTML =
+        '<div class="choices-wrap" style="margin:6px 0 10px">' +
+          '<button class="choice-btn" onclick="selectChoice('destruction_sensible','aucun',this)">✅ Aucune</button>' +
+          '<button class="choice-btn" onclick="selectChoice('destruction_sensible','un_peu',this)">🟡 Un peu</button>' +
+          '<button class="choice-btn" onclick="selectChoice('destruction_sensible','beaucoup',this)">🔴 Beaucoup</button>' +
+        '</div>';
+      wrap.appendChild(niveauDiv);
+    }
+  });
+
+  // Comportements custom
+  customs.forEach((val, i) => {
+    const row = document.createElement('div');
+    row.className = 'toggle-row';
+    row.innerHTML =
+      '<span class="toggle-label">✏️ ' + val + '</span>' +
+      '<label class="toggle"><input type="checkbox" id="comp-custom-' + i + '"/><span class="toggle-slider"></span></label>';
+    wrap.appendChild(row);
+  });
+}
+
+// ── PROFIL ──
+const COMPORTEMENTS_LISTE = [
+  { key: 'hypervigilance', label: '👁️ Hypervigilance' },
+  { key: 'peurs', label: '😨 Peurs' },
+  { key: 'anxiete_separation', label: '😰 Anxiété de séparation' },
+  { key: 'malproprete', label: '💧 Malpropreté' },
+  { key: 'destruction', label: '🪑 Destruction' },
+  { key: 'vocalises', label: '🗣️ Vocalises/gémissements' },
+  { key: 'lechages', label: '👅 Léchages compulsifs' },
+  { key: 'stereotypies', label: '🔄 Stéréotypies' },
+  { key: 'fugue', label: '🏃 Fugue/tentatives de fuite' },
+  { key: 'agression', label: '⚠️ Agression' },
+  { key: 'agression_redirigee', label: '↩️ Agression redirigée' },
+];
+
+let comportementsActifs = new Set();
+let comportementsCustom = [];
+
+function chargerProfil() {
+  if (!profil) return;
+
+  // Afficher sections selon profil
+  if (profil.suivi_sensible) document.getElementById('section-profil-sensible').style.display = 'block';
+  if (profil.suivi_reactif) document.getElementById('section-profil-reactif').style.display = 'block';
+
+  // Infos compte
+  const age = profil.date_naissance_chien ? calculerAge(profil.date_naissance_chien) : 'non renseigné';
+  document.getElementById('profil-infos').innerHTML =
+    '<div>👤 <strong>' + profil.prenom + '</strong></div>' +
+    '<div>🐕 <strong>' + profil.nom_chien + '</strong> — ' + age + '</div>' +
+    '<div style="margin-top:8px;font-size:12px;color:#bbb">Compte The Dog Experience</div>';
+
+  // Comportements sensible
+  if (profil.suivi_sensible) {
+    const saved = profil.comportements_sensible ? profil.comportements_sensible.split(',') : [];
+    comportementsActifs = new Set(saved.filter(s => !s.startsWith('custom:')));
+    comportementsCustom = saved.filter(s => s.startsWith('custom:')).map(s => s.replace('custom:',''));
+
+    const wrap = document.getElementById('profil-comportements');
+    wrap.innerHTML = '';
+    COMPORTEMENTS_LISTE.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn' + (comportementsActifs.has(c.key) ? ' selected' : '');
+      btn.textContent = c.label;
+      btn.onclick = function() {
+        if (comportementsActifs.has(c.key)) {
+          comportementsActifs.delete(c.key);
+          btn.classList.remove('selected');
+        } else {
+          comportementsActifs.add(c.key);
+          btn.classList.add('selected');
+        }
+      };
+      wrap.appendChild(btn);
+    });
+    afficherComportementsCustom();
+  }
+
+  // Déclencheurs réactivité
+  if (profil.suivi_reactif) {
+    const decls = [
+      { key: 'chiens', label: '🐕 Chiens' },
+      { key: 'humains', label: '🧍 Humains' },
+      { key: 'voitures', label: '🚗 Voitures' },
+      { key: 'velos', label: '🚲 Vélos' },
+      { key: 'joggers', label: '🏃 Joggers' },
+      { key: 'bruits', label: '🔊 Bruits' },
+    ];
+    const wrap = document.getElementById('profil-declencheurs');
+    wrap.innerHTML = '';
+    decls.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'toggle-row';
+      const checked = profil['declencheur_' + d.key] ? 'checked' : '';
+      row.innerHTML =
+        '<span class="toggle-label">' + d.label + '</span>' +
+        '<label class="toggle"><input type="checkbox" id="pdecl-' + d.key + '" ' + checked + '/><span class="toggle-slider"></span></label>';
+      wrap.appendChild(row);
+    });
+    document.getElementById('profil-decl-autres').value = profil.declencheur_autres || '';
+  }
+}
+
+function calculerAge(dateNaissance) {
+  const d = new Date(dateNaissance);
+  const mois = Math.floor((Date.now() - d.getTime()) / (1000*60*60*24*30.44));
+  if (mois < 12) return mois + ' mois';
+  const ans = Math.floor(mois/12);
+  const m = mois % 12;
+  return m > 0 ? ans + ' an' + (ans>1?'s':'') + ' ' + m + ' mois' : ans + ' an' + (ans>1?'s':'');
+}
+
+function ajouterComportementCustom() {
+  const val = document.getElementById('profil-comportement-custom').value.trim();
+  if (!val) return;
+  comportementsCustom.push(val);
+  document.getElementById('profil-comportement-custom').value = '';
+  afficherComportementsCustom();
+}
+
+function afficherComportementsCustom() {
+  const c = document.getElementById('profil-comportements-custom');
+  c.innerHTML = '';
+  comportementsCustom.forEach((val, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px';
+    div.innerHTML =
+      '<span style="flex:1;font-size:13px;color:#444;background:#f5f5f5;padding:6px 10px;border-radius:8px">✏️ ' + val + '</span>' +
+      '<button onclick="supprimerComportementCustom(' + i + ')" style="background:#fff0f0;border:none;border-radius:6px;padding:4px 8px;color:#e05555;cursor:pointer;font-size:12px">✕</button>';
+    c.appendChild(div);
+  });
+}
+
+function supprimerComportementCustom(i) {
+  comportementsCustom.splice(i, 1);
+  afficherComportementsCustom();
+}
+
+async function sauvegarderComportements() {
+  const tous = [...comportementsActifs, ...comportementsCustom.map(c => 'custom:' + c)];
+  const { error } = await supabaseClient.from('profiles')
+    .update({ comportements_sensible: tous.join(',') })
+    .eq('id', userId);
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  profil.comportements_sensible = tous.join(',');
+  // Recharger le journal pour appliquer les nouveaux comportements
+  chargerJournal();
+  showToast('✅ Comportements enregistrés !');
+}
+
+async function sauvegarderDeclencheurs() {
+  const updates = {
+    declencheur_chiens: document.getElementById('pdecl-chiens')?.checked || false,
+    declencheur_humains: document.getElementById('pdecl-humains')?.checked || false,
+    declencheur_voitures: document.getElementById('pdecl-voitures')?.checked || false,
+    declencheur_velos: document.getElementById('pdecl-velos')?.checked || false,
+    declencheur_joggers: document.getElementById('pdecl-joggers')?.checked || false,
+    declencheur_bruits: document.getElementById('pdecl-bruits')?.checked || false,
+    declencheur_autres: document.getElementById('profil-decl-autres').value || null,
+  };
+  const { error } = await supabaseClient.from('profiles').update(updates).eq('id', userId);
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  Object.assign(profil, updates);
+  genererCompteursDecl(profil);
+  showToast('✅ Déclencheurs enregistrés !');
 }
 
 async function seDeconnecter() {
