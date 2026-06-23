@@ -1005,56 +1005,7 @@
   </div>
 </div>
 
-      <div class="date-selector" id="date-selector-sante" style="margin-bottom:14px"></div>
 
-      <label class="form-label">Symptômes observés</label>
-      <div class="symptomes-grid">
-        <button class="symptome-btn" onclick="toggleSymptome('boiterie',this)">🦵 Boiterie</button>
-        <button class="symptome-btn" onclick="toggleSymptome('grattage',this)">✋ Grattage</button>
-        <button class="symptome-btn" onclick="toggleSymptome('vomissement',this)">🤢 Vomissement</button>
-        <button class="symptome-btn" onclick="toggleSymptome('diarrhee',this)">💩 Diarrhée</button>
-        <button class="symptome-btn" onclick="toggleSymptome('perte_appetit',this)">🍽️ Perte d'appétit</button>
-        <button class="symptome-btn" onclick="toggleSymptome('fatigue',this)">😴 Fatigue anormale</button>
-        <button class="symptome-btn" onclick="toggleSymptome('yeux',this)">👁️ Yeux</button>
-        <button class="symptome-btn" onclick="toggleSymptome('oreilles',this)">👂 Oreilles</button>
-        <button class="symptome-btn" onclick="toggleSymptome('peau',this)">🩹 Peau/poils</button>
-        <button class="symptome-btn" onclick="toggleSymptome('agitation',this)">😵 Agitation</button>
-      </div>
-
-      <label class="form-label">Description des symptômes</label>
-      <textarea id="symptomes_note" placeholder="Décris ce que tu observes…" rows="2"></textarea>
-
-      <button class="section-toggle-btn" onclick="toggleSection('traitement-section')" style="margin-top:12px">
-        Traitement en cours <span>▼</span>
-      </button>
-      <div class="section-collapsible" id="traitement-section">
-        <label class="form-label">Nom du traitement / médicament</label>
-        <input type="text" id="traitement_nom" placeholder="ex: Frontline, Apoquel…"/>
-        <label class="form-label">Dosage</label>
-        <input type="text" id="traitement_dose" placeholder="ex: 1 comprimé/jour"/>
-        <label class="form-label">Du</label>
-        <input type="date" id="traitement_debut" style="margin-bottom:8px"/>
-        <label class="form-label">Au</label>
-        <input type="date" id="traitement_fin" style="margin-bottom:8px"/>
-        <label class="form-label">Note</label>
-        <textarea id="traitement_note" placeholder="Prescrit par…" rows="2"></textarea>
-      </div>
-
-      <label class="form-label" style="margin-top:12px">Note générale santé</label>
-      <textarea id="note_sante" placeholder="RDV vétérinaire, observations générales…" rows="2"></textarea>
-
-      <button class="btn-save" onclick="enregistrerSante()" style="margin-top:16px">
-        ✅ Enregistrer
-      </button>
-    </div>
-
-    <!-- Historique santé -->
-    <div class="card">
-      <div class="card-title">📋 Historique santé</div>
-      <div id="historique-sante"><div class="vide">Aucune entrée santé</div></div>
-    </div>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════════════
      PAGE SUIVI (RDV + FORFAITS)
@@ -1164,7 +1115,6 @@ async function init() {
 
   // Calendrier
   genererDateSelector('date-selector', dateSelectionnee, (d) => { dateSelectionnee = d; chargerJournal(); });
-  genererDateSelector('date-selector-sante', dateSelectionneeS, (d) => { dateSelectionneeS = d; chargerHistoriqueSante(); });
 
   chargerBandeaux();
   chargerJournal();
