@@ -579,9 +579,7 @@
   <div class="nav-tab" onclick="afficherPage('ressources')" id="tab-ressources">
     <span class="tab-icon">📚</span>Ressources
   </div>
-  <div class="nav-tab" onclick="afficherPage('sante')" id="tab-sante">
-    <span class="tab-icon">🏥</span>Santé
-  </div>
+
   <div class="nav-tab" onclick="afficherPage('suivi')" id="tab-suivi">
     <span class="tab-icon">📅</span>Suivi
   </div>
@@ -602,6 +600,92 @@
     <div class="card-title">📅 Sélectionne la date</div>
     <div class="date-selector" id="date-selector"></div>
   </div>
+
+  <!-- Choix type de journée -->
+  <div id="choix-journee" style="display:none">
+    <div class="card">
+      <div class="card-title">🌤️ Comment s'est passée ta journée ?</div>
+      <p style="font-size:13px;color:#888;margin-bottom:16px">Choisis le mode de saisie selon ta journée.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="choisirModeJournal('rapide')" style="padding:18px;border-radius:14px;border:2px solid #2BBFB0;background:#e8f8f7;cursor:pointer;text-align:left;transition:all 0.2s">
+          <div style="font-size:16px;font-weight:700;color:#2BBFB0">✅ Journée tranquille</div>
+          <div style="font-size:12px;color:#888;margin-top:4px">Rien de particulier à noter — saisie rapide en 1 minute</div>
+        </button>
+        <button onclick="choisirModeJournal('complet')" style="padding:18px;border-radius:14px;border:2px solid #F5C842;background:#fef9e7;cursor:pointer;text-align:left;transition:all 0.2s">
+          <div style="font-size:16px;font-weight:700;color:#b8960a">📝 Journée particulière</div>
+          <div style="font-size:12px;color:#888;margin-top:4px">Il s'est passé quelque chose — je veux tout noter</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mode rapide -->
+  <div id="mode-rapide" style="display:none">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 4px">
+      <button onclick="retourChoixJournal()" style="background:none;border:none;color:#2BBFB0;font-size:13px;font-weight:600;cursor:pointer">← Changer</button>
+      <span style="font-size:12px;color:#bbb">Mode rapide</span>
+    </div>
+
+    <!-- État humain rapide -->
+    <div class="card">
+      <div class="card-title">🧑 Toi aujourd'hui</div>
+      <div class="emotion-grid">
+        <button class="emotion-btn" onclick="window.selectEmotion('humain_etat','serein',this)" data-val="serein">😌 Serein(e)</button>
+        <button class="emotion-btn" onclick="window.selectEmotion('humain_etat','fatigue',this)" data-val="fatigue">😴 Fatigué(e)</button>
+        <button class="emotion-btn" onclick="window.selectEmotion('humain_etat','stresse',this)" data-val="stresse">😰 Stressé(e)</button>
+        <button class="emotion-btn" onclick="window.selectEmotion('humain_etat','surcharge',this)" data-val="surcharge">🤯 En surcharge</button>
+        <button class="emotion-btn" onclick="window.selectEmotion('humain_etat','decouvrage',this)" data-val="decouvrage">😔 Découragé(e)</button>
+        <button class="emotion-btn" onclick="window.selectEmotion('humain_etat','bien',this)" data-val="bien">😊 Bien</button>
+      </div>
+    </div>
+
+    <!-- État chien rapide -->
+    <div class="card" id="rapide-etat-chien">
+      <div class="card-title">🐕 <span class="chien-nom-label">Ton chien</span> aujourd'hui</div>
+      <div id="rapide-emotion-chien"></div>
+    </div>
+
+    <!-- Sommeil rapide -->
+    <div class="card" id="rapide-sommeil">
+      <div class="card-title">😴 Sommeil</div>
+      <div id="rapide-sommeil-fields"></div>
+    </div>
+
+    <!-- Signes de stress rapide -->
+    <div class="card" id="rapide-stress">
+      <div class="card-title">⚡ Signes de stress observés</div>
+      <div id="rapide-stress-fields"></div>
+    </div>
+
+    <!-- Déclenchements rapide (réactif uniquement) -->
+    <div class="card" id="rapide-declenchements" style="display:none">
+      <div class="card-title">⚡ Déclenchements</div>
+      <div class="compteur-row">
+        <span class="compteur-label">Nombre total de déclenchements</span>
+        <div class="compteur-controls">
+          <button class="compteur-btn btn-moins" onclick="window.modifCompteur('decl_total',-1)">−</button>
+          <span class="compteur-val" id="val-decl_total">0</span>
+          <button class="compteur-btn btn-plus" onclick="window.modifCompteur('decl_total',1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📝 Note rapide <span style="font-weight:400;color:#bbb">(facultatif)</span></div>
+      <textarea id="note_libre_rapide" placeholder="Un mot sur la journée…" rows="2"></textarea>
+    </div>
+
+    <button class="btn-save" onclick="enregistrerJournalRapide()" id="btn-save-rapide">
+      ✅ Enregistrer
+    </button>
+  </div>
+
+  <!-- Mode complet -->
+  <div id="mode-complet" style="display:none">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 4px">
+      <button onclick="retourChoixJournal()" style="background:none;border:none;color:#2BBFB0;font-size:13px;font-weight:600;cursor:pointer">← Changer</button>
+      <span style="font-size:12px;color:#bbb">Mode complet</span>
+    </div>
 
   <!-- État humain -->
   <div class="card">
@@ -873,6 +957,8 @@
   <button class="btn-save" onclick="enregistrerJournal()" id="btn-save">
     ✅ Enregistrer la journée
   </button>
+
+  </div><!-- fin mode-complet -->
 </div>
 
 <!-- ══════════════════════════════════════════════
@@ -918,14 +1004,6 @@
     <div id="fiches-list"><div class="vide">Aucune fiche disponible pour l'instant</div></div>
   </div>
 </div>
-
-<!-- ══════════════════════════════════════════════
-     PAGE SANTÉ
-══════════════════════════════════════════════ -->
-<div class="page" id="page-sante">
-  <div style="padding-top:12px">
-    <div class="card">
-      <div class="card-title">🏥 Suivi Santé</div>
 
       <div class="date-selector" id="date-selector-sante" style="margin-bottom:14px"></div>
 
@@ -1092,7 +1170,6 @@ async function init() {
   chargerJournal();
   chargerMessages();
   chargerFiches();
-  chargerSante();
   chargerRdvForfaits();
   verifierMessagesNonLus();
   chargerProfil();
@@ -1294,7 +1371,8 @@ async function chargerBandeaux() {
 // ── Journal ──
 async function chargerJournal() {
   const { data } = await supabaseClient.from('journal')
-    .select('*').eq('user_id', userId).eq('date', dateSelectionnee).single();
+    .select('*').eq('user_id', userId).eq('date', dateSelectionnee)
+    .maybeSingle();
 
   // Reset visuel complet
   document.querySelectorAll('.emotion-btn').forEach(b => b.className = 'emotion-btn');
@@ -1402,6 +1480,23 @@ async function chargerJournal() {
     if (vs) vs.textContent = 0;
     if (va) va.textContent = 0;
   }
+
+  // Afficher le bon mode selon l'entrée existante
+  const choix = document.getElementById('choix-journee');
+  const rapide = document.getElementById('mode-rapide');
+  const complet = document.getElementById('mode-complet');
+  if (data && data.type_journee) {
+    choix.style.display = 'none';
+    rapide.style.display = data.type_journee === 'rapide' ? 'block' : 'none';
+    complet.style.display = data.type_journee === 'complet' ? 'block' : 'none';
+    if (data.type_journee === 'rapide') genererChampsRapide();
+    modeJournal = data.type_journee;
+  } else {
+    choix.style.display = 'block';
+    rapide.style.display = 'none';
+    complet.style.display = 'none';
+    modeJournal = null;
+  }
 }
 
 function collecterComportementsDynamiques() {
@@ -1427,6 +1522,7 @@ async function enregistrerJournal() {
   const entree = {
     user_id: userId,
     date: dateSelectionnee,
+    type_journee: 'complet',
     humain_etat: donnees.humain_etat || null,
     humain_note_libre: document.getElementById('humain_note').value || null,
     note_libre: document.getElementById('note_libre').value || null,
@@ -1976,6 +2072,136 @@ async function sauvegarderDeclencheurs() {
   Object.assign(profil, updates);
   genererCompteursDecl(profil);
   showToast('✅ Déclencheurs enregistrés !');
+}
+
+// ── MODE JOURNAL ──
+let modeJournal = null;
+compteurs['decl_total'] = 0;
+
+function choisirModeJournal(mode) {
+  modeJournal = mode;
+  document.getElementById('choix-journee').style.display = 'none';
+  document.getElementById('mode-rapide').style.display = mode === 'rapide' ? 'block' : 'none';
+  document.getElementById('mode-complet').style.display = mode === 'complet' ? 'block' : 'none';
+  if (mode === 'rapide') genererChampsRapide();
+}
+
+function retourChoixJournal() {
+  modeJournal = null;
+  document.getElementById('choix-journee').style.display = 'block';
+  document.getElementById('mode-rapide').style.display = 'none';
+  document.getElementById('mode-complet').style.display = 'none';
+}
+
+function genererChampsRapide() {
+  // Émotion chien selon profil
+  const emotionChien = document.getElementById('rapide-emotion-chien');
+  if (profil.suivi_chiot) {
+    emotionChien.innerHTML =
+      '<div class="emotion-grid">' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','tres_bien',this)">🌟 Très bien</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','bien',this)">😊 Bien</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','moyen',this)">😐 Moyen</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('humeur','difficile',this)">😟 Difficile</button>' +
+      '</div>';
+  } else {
+    emotionChien.innerHTML =
+      '<div class="emotion-grid">' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','serein',this)">😌 Serein</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','peu_tendu',this)">😕 Peu tendu</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','stresse',this)">😰 Stressé</button>' +
+      '<button class="emotion-btn" onclick="window.selectEmotion('emotion_maison','anxieux',this)">😱 Anxieux</button>' +
+      '</div>';
+  }
+
+  // Sommeil selon profil
+  const sommeil = document.getElementById('rapide-sommeil-fields');
+  if (profil.suivi_chiot) {
+    sommeil.innerHTML =
+      '<div style="display:flex;gap:10px">' +
+        '<div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Heures nuit</div><input type="number" id="r-heures-nuit" min="0" max="24" step="0.5" placeholder="ex: 8"/></div>' +
+        '<div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Heures siestes</div><input type="number" id="r-heures-siestes" min="0" max="12" step="0.5" placeholder="ex: 3"/></div>' +
+      '</div>';
+  } else {
+    sommeil.innerHTML =
+      '<div style="display:flex;gap:10px">' +
+        '<div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Heures nuit</div><input type="number" id="r-heures-nuit" min="0" max="24" step="0.5" placeholder="ex: 10"/></div>' +
+        '<div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Heures siestes</div><input type="number" id="r-heures-siestes" min="0" max="20" step="0.5" placeholder="ex: 4"/></div>' +
+      '</div>';
+  }
+
+  // Signes de stress selon profil
+  const stress = document.getElementById('rapide-stress-fields');
+  const saved = profil.comportements_sensible ? profil.comportements_sensible.split(',').filter(Boolean) : [];
+  const LABELS = {
+    hypervigilance:'👁️ Hypervigilance', peurs:'😨 Peurs',
+    anxiete_separation:'😰 Anxiété séparation', malproprete:'💧 Malpropreté',
+    destruction:'🪑 Destruction', vocalises:'🗣️ Vocalises',
+    lechages:'👅 Léchages', stereotypies:'🔄 Stéréotypies',
+    fugue:'🏃 Fugue', agression:'⚠️ Agression',
+    agression_redirigee:'↩️ Agression redirigée'
+  };
+
+  if (profil.suivi_sensible && saved.length > 0) {
+    let html = '<div class="choices-wrap">';
+    saved.filter(s => !s.startsWith('custom:')).forEach(key => {
+      const label = LABELS[key];
+      if (label) html += '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','' + key + '',this)">' + label + '</button>';
+    });
+    saved.filter(s => s.startsWith('custom:')).forEach(s => {
+      const val = s.replace('custom:','');
+      html += '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','custom:' + val + '',this)">✏️ ' + val + '</button>';
+    });
+    html += '</div>';
+    stress.innerHTML = html;
+  } else if (profil.suivi_chiot) {
+    stress.innerHTML =
+      '<div class="choices-wrap">' +
+      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','mordillements',this)">🦷 Mordillements</button>' +
+      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','destruction',this)">🪑 Destruction</button>' +
+      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','agitation',this)">😵 Agitation</button>' +
+      '<button class="choice-btn" onclick="window.toggleMulti('stress_rapide','sauts',this)">⬆️ Sauts</button>' +
+      '</div>';
+  } else {
+    stress.innerHTML = '<div style="font-size:12px;color:#bbb;padding:8px 0">Configure tes comportements dans ⚙️ Profil</div>';
+  }
+
+  // Déclenchements si réactif
+  if (profil.suivi_reactif) {
+    document.getElementById('rapide-declenchements').style.display = 'block';
+  }
+}
+
+async function enregistrerJournalRapide() {
+  const btn = document.getElementById('btn-save-rapide');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+  const stressRapide = multiSelects['stress_rapide'] ? [...multiSelects['stress_rapide']].join(',') : null;
+
+  const entree = {
+    user_id: userId,
+    date: dateSelectionnee,
+    type_journee: 'rapide',
+    humain_etat: donnees.humain_etat || null,
+    note_libre: document.getElementById('note_libre_rapide')?.value || null,
+    // Chiot
+    humeur: donnees.humeur || null,
+    heures_nuit: parseFloat(document.getElementById('r-heures-nuit')?.value) || null,
+    heures_siestes: parseFloat(document.getElementById('r-heures-siestes')?.value) || null,
+    // Sensible
+    emotion_maison: donnees.emotion_maison || null,
+    sommeil_chien_nuit: parseFloat(document.getElementById('r-heures-nuit')?.value) || null,
+    sommeil_chien_siestes: parseFloat(document.getElementById('r-heures-siestes')?.value) || null,
+    comportements_jour: stressRapide,
+    // Réactif
+    stimuli_total: compteurs['decl_total'] || 0,
+    decl_chiens: profil.suivi_reactif ? (compteurs['decl_total'] || 0) : null,
+  };
+
+  const { error } = await supabaseClient.from('journal').upsert(entree, { onConflict: 'user_id,date' });
+  btn.disabled = false; btn.textContent = '✅ Enregistrer';
+  if (error) { showToast('❌ Erreur : ' + error.message); return; }
+  showToast('✅ Journée enregistrée !');
 }
 
 async function seDeconnecter() {
