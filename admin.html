@@ -1094,22 +1094,34 @@ function filtrerFichesDispo() {
 function afficherFichesDispo(liste) {
   const c = document.getElementById('fiches-dispo-list');
   if (!liste || liste.length === 0) { c.innerHTML = '<div class="vide">Aucune fiche trouvée</div>'; return; }
-  c.innerHTML = '';
-  liste.forEach(f => {
-    const imgs = f.images_urls ? f.images_urls.split('|') : [];
-    const div = document.createElement('div');
-    div.className = 'fiche-item';
-    div.style.cursor = 'pointer';
-    div.innerHTML =
-      (imgs[0] ? '<img class="fiche-thumb" src="'+imgs[0]+'"/>' : '<div class="fiche-thumb-placeholder">📄</div>') +
-      '<div class="fiche-info">' +
-        '<div class="fiche-titre-item">' + f.titre + '</div>' +
-        '<span class="fiche-theme-item">' + (f.theme || '—') + '</span>' +
-        '<div class="fiche-profil-item">' + labelProfil(f.profil_cible) + '</div>' +
-      '</div>' +
-      '<button class="btn btn-primary" style="font-size:11px;padding:6px 12px;flex-shrink:0" onclick="envoyerFicheDirecte(\'' + f.id + '\')">📬 Envoyer</button>';
-    c.appendChild(div);
-  });
+
+  // Récupérer les IDs des fiches déjà envoyées
+  supabaseClient.from('fiches_envoyees')
+    .select('fiche_id').eq('user_id', clientSelectionne.id)
+    .then(function({ data: envoyees }) {
+      const dejEnvoyees = new Set((envoyees || []).map(fe => fe.fiche_id));
+      c.innerHTML = '';
+      liste.forEach(f => {
+        const imgs = f.images_urls ? f.images_urls.split('|') : [];
+        const dejaEnvoyee = dejEnvoyees.has(f.id);
+        const div = document.createElement('div');
+        div.className = 'fiche-item';
+        div.style.opacity = dejaEnvoyee ? '0.5' : '1';
+        div.style.background = dejaEnvoyee ? '#f5f5f5' : '';
+        div.style.borderRadius = '8px';
+        div.innerHTML =
+          (imgs[0] ? '<img class="fiche-thumb" src="'+imgs[0]+'" style="' + (dejaEnvoyee ? 'filter:grayscale(1)' : '') + '"/>' : '<div class="fiche-thumb-placeholder">📄</div>') +
+          '<div class="fiche-info">' +
+            '<div class="fiche-titre-item">' + f.titre + '</div>' +
+            '<span class="fiche-theme-item">' + (f.theme || '—') + '</span>' +
+            '<div class="fiche-profil-item">' + labelProfil(f.profil_cible) + '</div>' +
+          '</div>' +
+          (dejaEnvoyee
+            ? '<span style="font-size:11px;color:#bbb;flex-shrink:0;padding:6px 10px;background:#e0e0e0;border-radius:8px">✅ Envoyée</span>'
+            : '<button class="btn btn-primary" style="font-size:11px;padding:6px 12px;flex-shrink:0" onclick="envoyerFicheDirecte(\'' + f.id + '\')">📬 Envoyer</button>');
+        c.appendChild(div);
+      });
+    });
 }
 
 async function envoyerFicheDirecte(ficheId) {
@@ -1154,13 +1166,13 @@ async function chargerJournalClient() {
     let html = `<div class="je-date">${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>`;
 
     // ── HUMAIN ──
-    html += `<div style="background:#f8f8f8;border-radius:8px;padding:10px;margin-bottom:8px">`;
-    html += `<div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;text-transform:uppercase">🧑 État humain</div>`;
-    html += '<div class="je-grid">';
-    if (e.humain_etat) html += `<div class="je-item"><span class="je-label">État </span><span class="e-${e.humain_etat}">${labelEtat(e.humain_etat)}</span></div>`;
-    html += '</div>';
-    if (e.humain_note_libre) html += `<div class="je-note" style="margin-top:4px">💬 ${e.humain_note_libre}</div>`;
-    html += '</div>';
+    if (e.humain_etat || e.humain_note_libre) {
+      html += '<div style="background:#f8f8f8;border-radius:8px;padding:10px;margin-bottom:8px">';
+      html += '<div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;text-transform:uppercase">🧑 État humain</div>';
+      if (e.humain_etat) html += '<div style="font-size:13px;font-weight:600;margin-bottom:4px"><span class="e-' + e.humain_etat + '">' + labelEtat(e.humain_etat) + '</span></div>';
+      if (e.humain_note_libre) html += '<div class="je-note">💬 ' + e.humain_note_libre + '</div>';
+      html += '</div>';
+    }
 
     // ── CHIOT ──
     if (p.suivi_chiot) {
@@ -1193,16 +1205,35 @@ async function chargerJournalClient() {
       html += '<div class="je-grid">';
       if (e.emotion_maison) html += `<div class="je-item"><span class="je-label">Maison </span><span class="e-${e.emotion_maison}">${labelEtat(e.emotion_maison)}</span></div>`;
       if (e.emotion_exterieur) html += `<div class="je-item"><span class="je-label">Extérieur </span><span class="e-${e.emotion_exterieur}">${labelEtat(e.emotion_exterieur)}</span></div>`;
-      if (e.charge_allostatique != null) html += `<div class="je-item"><span class="je-label">Charge allost. </span><strong>${e.charge_allostatique}/10</strong></div>`;
-      if (e.stimuli_sensible) html += `<div class="je-item"><span class="je-label">Stimuli </span>${e.stimuli_sensible}</div>`;
-      if (e.mise_au_vert) html += `<div class="je-item"><span class="je-label">Mise au vert </span>✅</div>`;
-      if (e.anxiete_separation) html += `<div class="je-item"><span class="je-label">Anxiété sépa. </span>⚠️ Oui</div>`;
-      if (e.hypervigileance) html += `<div class="je-item"><span class="je-label">Hypervigilance </span>⚠️ Oui</div>`;
-      if (e.inhibition) html += `<div class="je-item"><span class="je-label">Inhibition </span>⚠️ Oui</div>`;
-      if (e.malproprete) html += `<div class="je-item"><span class="je-label">Malpropreté </span>⚠️ Oui</div>`;
-      if (e.destruction_sensible) html += `<div class="je-item"><span class="je-label">Destruction </span>${labelNiveau(e.destruction_sensible)}</div>`;
+      if (e.charge_allostatique != null) html += '<div class="je-item"><span class="je-label">Charge allost. </span><strong>' + e.charge_allostatique + '/10</strong></div>';
+      if (e.sommeil_chien_nuit) html += '<div class="je-item"><span class="je-label">Sommeil nuit </span>' + e.sommeil_chien_nuit + 'h</div>';
+      if (e.sommeil_chien_siestes) html += '<div class="je-item"><span class="je-label">Siestes </span>' + e.sommeil_chien_siestes + 'h</div>';
+      if (e.stimuli_sensible) html += '<div class="je-item"><span class="je-label">Stimuli </span>' + e.stimuli_sensible + '</div>';
+      if (e.mise_au_vert) html += '<div class="je-item"><span class="je-label">Mise au vert </span>✅</div>';
+      if (e.malproprete) html += '<div class="je-item"><span class="je-label">Malpropreté </span>⚠️ Oui</div>';
+      if (e.destruction_sensible) html += '<div class="je-item"><span class="je-label">Destruction </span>' + labelNiveau(e.destruction_sensible) + '</div>';
       html += '</div>';
-      if (e.anxiete_separation_note) html += `<div class="je-note" style="margin-top:4px">📝 ${e.anxiete_separation_note}</div>`;
+      // Comportements cochés ce jour
+      if (e.comportements_jour) {
+        const labelsComp = {
+          hypervigilance:'👁️ Hypervigilance', peurs:'😨 Peurs',
+          anxiete_separation:'😰 Anxiété de séparation', malproprete:'💧 Malpropreté',
+          destruction:'🪑 Destruction', vocalises:'🗣️ Vocalises',
+          lechages:'👅 Léchages compulsifs', stereotypies:'🔄 Stéréotypies',
+          fugue:'🏃 Fugue', agression:'⚠️ Agression',
+          agression_redirigee:'↩️ Agression redirigée'
+        };
+        const comps = e.comportements_jour.split(',').map(function(k) {
+          if (k.startsWith('custom:')) return '✏️ ' + k.replace('custom:','');
+          return labelsComp[k] || k;
+        }).filter(Boolean);
+        if (comps.length > 0) {
+          html += '<div class="je-note" style="margin-top:6px;background:#ede9ff;border-radius:6px;padding:6px 10px">';
+          html += '<span style="font-weight:700;color:#7c3aed">Comportements observés : </span>' + comps.join(' · ');
+          html += '</div>';
+        }
+      }
+      if (e.anxiete_separation_note) html += '<div class="je-note" style="margin-top:4px">📝 ' + e.anxiete_separation_note + '</div>';
       html += '</div>';
     }
 
