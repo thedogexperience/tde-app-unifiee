@@ -562,7 +562,21 @@
       <!-- Journal client -->
       <div id="sous-journal">
         <div class="card">
-          <div class="card-title">📓 Journal (30 derniers jours)</div>
+          <div class="card-title">📓 Journal (30 derniers jours)
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+              <button class="btn" style="font-size:11px;padding:5px 10px;background:#e8f8f7;color:#2BBFB0;border:none;border-radius:8px" onclick="envoyerReactionRapide('vue')">👁️ Fiche vue</button>
+              <button class="btn" style="font-size:11px;padding:5px 10px;background:#fff0f0;color:#e05555;border:none;border-radius:8px" onclick="envoyerReactionRapide('courage')">💪 Courage !</button>
+              <button class="btn" style="font-size:11px;padding:5px 10px;background:#fef9e7;color:#b8960a;border:none;border-radius:8px" onclick="envoyerReactionRapide('bravo')">🌟 Bravo !</button>
+              <button class="btn" style="font-size:11px;padding:5px 10px;background:#f3e8ff;color:#7c3aed;border:none;border-radius:8px" onclick="ouvrirMessageRapide()">✍️ Message</button>
+            </div>
+          </div>
+          <div id="reaction-message-wrap" style="display:none;margin-bottom:12px;padding:10px;background:#f9f9f9;border-radius:8px">
+            <textarea id="reaction-message-text" placeholder="Écris un message rapide…" rows="2" style="width:100%;border:1.5px solid #e0e0e0;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-primary" style="font-size:12px;padding:7px 14px" onclick="envoyerReactionRapide('message')">Envoyer</button>
+              <button class="btn btn-outline" style="font-size:12px;padding:7px 14px" onclick="fermerMessageRapide()">Annuler</button>
+            </div>
+          </div>
           <div id="journal-client-list"><div class="vide">Chargement…</div></div>
         </div>
       </div>
@@ -1216,7 +1230,7 @@ async function chargerJournalClient() {
       html += '<div class="je-grid">';
       if (e.emotion_maison) html += `<div class="je-item"><span class="je-label">Maison </span><span class="e-${e.emotion_maison}">${labelEtat(e.emotion_maison)}</span></div>`;
       if (e.emotion_exterieur) html += `<div class="je-item"><span class="je-label">Extérieur </span><span class="e-${e.emotion_exterieur}">${labelEtat(e.emotion_exterieur)}</span></div>`;
-      if (e.charge_allostatique != null) html += '<div class="je-item"><span class="je-label">Charge allost. </span><strong>' + e.charge_allostatique + '/10</strong></div>';
+
       if (e.sommeil_chien_nuit) html += '<div class="je-item"><span class="je-label">Sommeil nuit </span>' + e.sommeil_chien_nuit + 'h</div>';
       if (e.sommeil_chien_siestes) html += '<div class="je-item"><span class="je-label">Siestes </span>' + e.sommeil_chien_siestes + 'h</div>';
       if (e.stimuli_sensible) html += '<div class="je-item"><span class="je-label">Stimuli </span>' + e.stimuli_sensible + '</div>';
@@ -1289,6 +1303,55 @@ async function chargerJournalClient() {
 function labelNiveau(val) {
   const n = { aucun:'✅ Aucun', un_peu:'🟡 Un peu', beaucoup:'🔴 Beaucoup' };
   return n[val] || val;
+}
+
+// ── Réactions rapides ──
+const REACTIONS = {
+  vue: '👁️ Laëtitia a consulté ton journal.',
+  courage: '💪 Courage ! Les journées difficiles font partie du chemin. Tu fais du super travail.',
+  bravo: '🌟 Bravo pour vos progrès ! Continue comme ça, c\'est vraiment encourageant.'
+};
+
+function ouvrirMessageRapide() {
+  document.getElementById('reaction-message-wrap').style.display = 'block';
+  document.getElementById('reaction-message-text').focus();
+}
+function fermerMessageRapide() {
+  document.getElementById('reaction-message-wrap').style.display = 'none';
+  document.getElementById('reaction-message-text').value = '';
+}
+
+async function envoyerReactionRapide(type) {
+  if (!clientSelectionne) return;
+  let contenu = REACTIONS[type];
+  if (type === 'message') {
+    contenu = document.getElementById('reaction-message-text').value.trim();
+    if (!contenu) return;
+    fermerMessageRapide();
+  }
+
+  const { error } = await supabaseClient.from('messages').insert({
+    user_id: clientSelectionne.id,
+    expediteur: 'admin',
+    contenu,
+    lu: false
+  });
+  if (error) { showToast('❌ Erreur'); return; }
+
+  // Email au client si ce n'est pas juste "fiche vue"
+  if (type !== 'vue' && clientSelectionne.email) {
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
+        client_prenom: clientSelectionne.prenom,
+        chien_nom: clientSelectionne.nom_chien,
+        client_email: clientSelectionne.email,
+        message: contenu
+      });
+    } catch(e) { console.warn('Email non envoyé', e); }
+  }
+
+  const labels = { vue: '👁️ Fiche vue envoyée', courage: '💪 Encouragement envoyé !', bravo: '🌟 Félicitations envoyées !', message: '✅ Message envoyé !' };
+  showToast(labels[type] || '✅ Envoyé !');
 }
 
 function labelEtat(val) {
