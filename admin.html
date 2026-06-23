@@ -1044,14 +1044,14 @@ async function chargerFichesClientEnvoyees() {
       const imgs = f.images_urls ? f.images_urls.split('|') : [];
       const div = document.createElement('div');
       div.className = 'fiche-item';
-      div.innerHTML = \`
-        \${imgs[0] ? \`<img class="fiche-thumb" src="\${imgs[0]}"/>\` : \`<div class="fiche-thumb-placeholder">📄</div>\`}
-        <div class="fiche-info">
-          <div class="fiche-titre-item">\${f.titre}</div>
-          <span class="fiche-theme-item">\${f.theme || '—'}</span>
-          <div class="fiche-profil-item">\${fe.vue ? '✅ Vue' : '🆕 Non vue'} · \${new Date(fe.envoyee_at).toLocaleDateString('fr-FR')}</div>
-        </div>
-        <button class="btn-icon btn-del" title="Retirer" onclick="retirerFicheClient('\${fe.id}')">🗑️</button>\`;
+      div.innerHTML =
+        (imgs[0] ? '<img class="fiche-thumb" src="'+imgs[0]+'"/>' : '<div class="fiche-thumb-placeholder">📄</div>') +
+        '<div class="fiche-info">' +
+          '<div class="fiche-titre-item">' + f.titre + '</div>' +
+          '<span class="fiche-theme-item">' + (f.theme || '—') + '</span>' +
+          '<div class="fiche-profil-item">' + (fe.vue ? '✅ Vue' : '🆕 Non vue') + ' · ' + new Date(fe.envoyee_at).toLocaleDateString('fr-FR') + '</div>' +
+        '</div>' +
+        '<button class="btn-icon btn-del" title="Retirer" onclick="retirerFicheClient(\'' + fe.id + '\')">🗑️</button>';
       c.appendChild(div);
     });
   }
@@ -1090,14 +1090,14 @@ function afficherFichesDispo(liste) {
     const div = document.createElement('div');
     div.className = 'fiche-item';
     div.style.cursor = 'pointer';
-    div.innerHTML = \`
-      \${imgs[0] ? \`<img class="fiche-thumb" src="\${imgs[0]}"/>\` : \`<div class="fiche-thumb-placeholder">📄</div>\`}
-      <div class="fiche-info">
-        <div class="fiche-titre-item">\${f.titre}</div>
-        <span class="fiche-theme-item">\${f.theme || '—'}</span>
-        <div class="fiche-profil-item">\${labelProfil(f.profil_cible)}</div>
-      </div>
-      <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;flex-shrink:0" onclick="envoyerFicheDirecte('\${f.id}')">📬 Envoyer</button>\`;
+    div.innerHTML =
+      (imgs[0] ? '<img class="fiche-thumb" src="'+imgs[0]+'"/>' : '<div class="fiche-thumb-placeholder">📄</div>') +
+      '<div class="fiche-info">' +
+        '<div class="fiche-titre-item">' + f.titre + '</div>' +
+        '<span class="fiche-theme-item">' + (f.theme || '—') + '</span>' +
+        '<div class="fiche-profil-item">' + labelProfil(f.profil_cible) + '</div>' +
+      '</div>' +
+      '<button class="btn btn-primary" style="font-size:11px;padding:6px 12px;flex-shrink:0" onclick="envoyerFicheDirecte(\'' + f.id + '\')">📬 Envoyer</button>';
     c.appendChild(div);
   });
 }
@@ -1112,7 +1112,7 @@ async function envoyerFicheDirecte(ficheId) {
   if (error && error.code !== '23505') { showToast('❌ Erreur : ' + error.message); return; }
   if (error && error.code === '23505') { showToast('⚠️ Fiche déjà envoyée à ce client'); return; }
   chargerFichesClientEnvoyees();
-  showToast(\`✅ Fiche envoyée à \${clientSelectionne.prenom} !\`);
+  showToast('✅ Fiche envoyée à ' + clientSelectionne.prenom + ' !');
 }
 
 async function retirerFicheClient(feId) {
