@@ -2030,8 +2030,8 @@ async function chargerObjectifs() {
           (o.atteint && o.date_atteint ? '<div style="font-size:11px;color:#2BBFB0;margin-top:3px">✓ Atteint le ' + new Date(o.date_atteint).toLocaleDateString('fr-FR') + '</div>' : '') +
         '</div>' +
         '<div style="display:flex;gap:6px">' +
-          (!o.atteint ? '<button class="btn btn-primary" style="font-size:11px;padding:5px 10px" onclick="cocherObjectif('' + o.id + '')">✓ Atteint !</button>' : '') +
-          '<button class="btn-icon btn-del" onclick="supprimerObjectif('' + o.id + '')">🗑️</button>' +
+          (!o.atteint ? '<button class="btn btn-primary" style="font-size:11px;padding:5px 10px" onclick="cocherObjectif(\'' + o.id + '\')" >✓ Atteint !</button>' : '') +
+          '<button class="btn-icon btn-del" onclick="supprimerObjectif(\'' + o.id + '\')" >🗑️</button>' +
         '</div>' +
       '</div>';
     c.appendChild(div);
