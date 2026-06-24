@@ -551,6 +551,27 @@ async function creerCompte() {
     return;
   }
 
+  // Envoi automatique des fiches selon le profil
+  const categories = [];
+  if (profils.chiot) categories.push('Chiot');
+  if (profils.sensible) categories.push('Sensible');
+  if (profils.reactif) categories.push('Réactif');
+
+  if (categories.length > 0) {
+    // Récupérer les fiches correspondantes
+    let query = supabaseClient.from('fiches').select('id, categorie');
+    const { data: fichesAuto } = await query.in('categorie', categories);
+
+    if (fichesAuto && fichesAuto.length > 0) {
+      const envois = fichesAuto.map(f => ({
+        user_id: userId,
+        fiche_id: f.id,
+        vue: false
+      }));
+      await supabaseClient.from('fiches_envoyees').insert(envois);
+    }
+  }
+
   // Succès
   document.getElementById('etape2').style.display = 'none';
   document.getElementById('etape-succes').style.display = 'block';
