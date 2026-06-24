@@ -858,6 +858,9 @@
     <button class="btn btn-outline" style="margin-top:6px;font-size:12px;padding:7px 12px"
             onclick="ajouterImage()">+ Ajouter cette image</button>
 
+    <label>Ordre d'affichage <span style="color:#bbb;font-weight:400">(dans la catégorie)</span></label>
+    <input type="number" id="fiche-ordre" min="1" max="999" placeholder="ex: 1 = en premier"/>
+
     <label style="margin-top:14px">Vidéo YouTube (URL, facultatif)</label>
     <input type="url" id="fiche-video" placeholder="https://www.youtube.com/watch?v=…"/>
 
@@ -1119,7 +1122,7 @@ async function chargerFichesClientEnvoyees() {
       div.innerHTML =
         (imgs[0] ? '<img class="fiche-thumb" src="'+imgs[0]+'"/>' : '<div class="fiche-thumb-placeholder">📄</div>') +
         '<div class="fiche-info">' +
-          '<div class="fiche-titre-item">' + f.titre + '</div>' +
+          '<div class="fiche-titre-item">' + (f.ordre && f.ordre < 999 ? '<span style="color:#bbb;font-size:10px;margin-right:4px">#' + f.ordre + '</span>' : '') + f.titre + '</div>' +
           '<span class="fiche-theme-item">' + ({Chiot:'🐶',Sensible:'🌸','Réactif':'⚡',Notions:'💡',Pratiques:'📋',Protocoles:'🔬',Autres:'📁'}[f.categorie]||'') + ' ' + (f.categorie || f.theme || '—') + '</span>' +
           '<div class="fiche-profil-item">' + (fe.vue ? '✅ Vue' : '🆕 Non vue') + ' · ' + new Date(fe.envoyee_at).toLocaleDateString('fr-FR') + '</div>' +
         '</div>' +
@@ -1752,6 +1755,7 @@ function setFiltreTheme(theme, btn) {
 function afficherFichesAdmin(liste) {
   const c = document.getElementById('fiches-admin-list');
   if (liste.length === 0) { c.innerHTML = '<div class="vide">Aucune fiche</div>'; return; }
+  liste = [...liste].sort((a,b) => (a.ordre||999) - (b.ordre||999));
   c.innerHTML = '';
   liste.forEach(f => {
     const imgs = f.images_urls ? f.images_urls.split('|') : [];
@@ -1782,6 +1786,7 @@ function ouvrirModalFiche() {
   imagesUrls = [];
   document.getElementById('modal-fiche-titre').textContent = '📚 Créer une fiche';
   ['fiche-titre','fiche-contenu','fiche-video','fiche-img-input'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fiche-ordre').value = 999;
   document.getElementById('imgs-preview').innerHTML = '';
   document.getElementById('modal-fiche').classList.add('open');
 }
@@ -1797,6 +1802,7 @@ function ouvrirEditionFiche(id) {
   document.getElementById('fiche-profil').value = f.profil_cible || 'tous';
   document.getElementById('fiche-contenu').value = f.contenu || '';
   document.getElementById('fiche-video').value = f.video_url || '';
+  document.getElementById('fiche-ordre').value = f.ordre || 999;
   document.getElementById('fiche-img-input').value = '';
   renderImgsPreview();
   document.getElementById('modal-fiche').classList.add('open');
@@ -1843,6 +1849,7 @@ async function sauvegarderFiche() {
     contenu: document.getElementById('fiche-contenu').value || null,
     images_urls: imagesUrls.join('|') || null,
     video_url: document.getElementById('fiche-video').value || null,
+    ordre: parseInt(document.getElementById('fiche-ordre').value) || 999,
   };
 
   let error;
