@@ -994,14 +994,13 @@
   <div style="padding-top:12px">
     <div class="filtres-wrap" id="filtres-ressources">
       <button class="filtre-btn active" onclick="filtrerFiches('tous',this)">Toutes</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Lien',this)">Lien</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Comportement',this)">Comportement</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Sommeil',this)">Sommeil</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Socialisation',this)">Socialisation</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Réactivité',this)">Réactivité</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Sensibilité',this)">Sensibilité</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Santé',this)">Santé</button>
-      <button class="filtre-btn" onclick="filtrerFiches('Quotidien',this)">Quotidien</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Chiot',this)">🐶 Chiot</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Sensible',this)">🌸 Sensible</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Réactif',this)">⚡ Réactif</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Notions',this)">💡 Notions</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Pratiques',this)">📋 Pratiques</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Protocoles',this)">🔬 Protocoles</button>
+      <button class="filtre-btn" onclick="filtrerFiches('Autres',this)">📁 Autres</button>
     </div>
     <div id="fiches-list"><div class="vide">Aucune fiche disponible pour l'instant</div></div>
   </div>
@@ -1020,6 +1019,12 @@
       <div id="graphique-legende" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;font-size:12px"></div>
       <canvas id="graphique-suivi" height="220"></canvas>
       <div id="graphique-vide" class="vide" style="display:none">Pas encore assez de données (3 jours minimum)</div>
+    </div>
+
+    <!-- Objectifs -->
+    <div class="card">
+      <div class="card-title">🎯 Mes objectifs</div>
+      <div id="objectifs-client-list"><div class="vide">Aucun objectif défini pour l'instant</div></div>
     </div>
 
     <div class="card">
@@ -1141,7 +1146,7 @@ window.afficherPage = function(page) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('tab-' + page).classList.add('active');
-  if (page === 'suivi') chargerGraphique();
+  if (page === 'suivi') { chargerGraphique(); chargerObjectifsClient(); chargerRdvForfaits(); }
 }
 
 // ── Calendrier ──
@@ -1666,22 +1671,23 @@ function afficherFiches(liste) {
     const div = document.createElement('div');
     div.className = 'fiche-card';
     div.onclick = () => ouvrirFiche(f, fe);
-    div.innerHTML = `
-      ${imgs[0] ? `<img class="fiche-img" src="${imgs[0]}" alt="${f.titre}"/>` : ''}
-      <div class="fiche-body">
-        <span class="fiche-theme">${f.theme || 'Général'}</span>
-        ${!fe.vue ? '<span class="fiche-nouvelle">NOUVEAU</span>' : ''}
-        <div class="fiche-titre">${f.titre}</div>
-      </div>`;
+    const catEmoji = {Chiot:'🐶',Sensible:'🌸','Réactif':'⚡',Notions:'💡',Pratiques:'📋',Protocoles:'🔬',Autres:'📁'}[f.categorie] || '';
+    div.innerHTML =
+      (imgs[0] ? '<img class="fiche-img" src="' + imgs[0] + '" alt="' + f.titre + '"/>' : '') +
+      '<div class="fiche-body">' +
+        '<span class="fiche-theme">' + catEmoji + ' ' + (f.categorie || f.theme || 'Général') + '</span>' +
+        (!fe.vue ? '<span class="fiche-nouvelle">NOUVEAU</span>' : '') +
+        '<div class="fiche-titre">' + f.titre + '</div>' +
+      '</div>';
     container.appendChild(div);
   });
 }
 
-function filtrerFiches(theme, btn) {
+function filtrerFiches(cat, btn) {
   document.querySelectorAll('.filtre-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (theme === 'tous') { afficherFiches(fichesToutes); return; }
-  afficherFiches(fichesToutes.filter(fe => fe.fiches && fe.fiches.theme === theme));
+  if (cat === 'tous') { afficherFiches(fichesToutes); return; }
+  afficherFiches(fichesToutes.filter(fe => fe.fiches && fe.fiches.categorie === cat));
 }
 
 function ouvrirFiche(f, fe) {
@@ -1755,6 +1761,39 @@ async function enregistrerSante() {
 }
 
 // ── RDV + Forfaits ──
+async function chargerObjectifsClient() {
+  const { data } = await supabaseClient.from('objectifs')
+    .select('*').eq('user_id', userId).order('created_at');
+
+  const c = document.getElementById('objectifs-client-list');
+  if (!c) return;
+  if (!data || data.length === 0) {
+    c.innerHTML = '<div class="vide">Aucun objectif défini pour l'instant</div>';
+    return;
+  }
+
+  c.innerHTML = '';
+  const nonAtteints = data.filter(o => !o.atteint);
+  const atteints = data.filter(o => o.atteint);
+
+  [...nonAtteints, ...atteints].forEach(o => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;margin-bottom:8px;' +
+      'background:' + (o.atteint ? '#e8f8f7' : '#f8f8f8') + ';' +
+      'border:1.5px solid ' + (o.atteint ? '#2BBFB0' : '#e0e0e0');
+    div.innerHTML =
+      '<div style="font-size:24px">' + (o.atteint ? '✅' : '🎯') + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:14px;font-weight:700;color:' + (o.atteint ? '#2BBFB0' : '#1a1a1a') + ';' +
+          (o.atteint ? 'text-decoration:line-through;' : '') + '">' + o.titre + '</div>' +
+        (o.description ? '<div style="font-size:12px;color:#888;margin-top:2px">' + o.description + '</div>' : '') +
+        (o.atteint && o.date_atteint ? '<div style="font-size:11px;color:#2BBFB0;margin-top:3px">✓ Atteint le ' +
+          new Date(o.date_atteint).toLocaleDateString('fr-FR') + '</div>' : '') +
+      '</div>';
+    c.appendChild(div);
+  });
+}
+
 async function chargerRdvForfaits() {
   const now = new Date().toISOString();
 
