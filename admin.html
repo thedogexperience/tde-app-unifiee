@@ -13,6 +13,7 @@
   <meta name="theme-color" content="#1a1a1a"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="config.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -598,13 +599,13 @@
           <input class="recherche" id="recherche-fiches-client" placeholder="🔍 Rechercher…" oninput="filtrerFichesClient()" style="margin-bottom:8px"/>
           <div class="filtres" id="filtres-fiches-client" style="margin-bottom:10px">
             <button class="filtre-btn active" onclick="setFiltreClient('',this)">Toutes</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Besoins',this)">🎡 Besoins</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Charge allostatique',this)">⚖️ Charge allo.</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Circuits du stress',this)">🧠 Circuits</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Signaux de communication',this)">🗣️ Signaux</button>
             <button class="filtre-btn" onclick="setFiltreClient('Chiot',this)">🐶 Chiot</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Sensible',this)">🌸 Sensible</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Réactif',this)">⚡ Réactif</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Notions',this)">💡 Notions</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Pratiques',this)">📋 Pratiques</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Divers',this)">📁 Divers</button>
             <button class="filtre-btn" onclick="setFiltreClient('Protocoles',this)">🔬 Protocoles</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Autres',this)">📁 Autres</button>
           </div>
           <div id="fiches-client-envoyees"><div class="vide">Aucune fiche envoyée</div></div>
         </div>
@@ -718,13 +719,13 @@
       <input class="recherche" id="recherche-fiches" placeholder="🔍 Rechercher une fiche…" oninput="filtrerFichesAdmin()"/>
       <div class="filtres" id="filtres-fiches">
         <button class="filtre-btn active" onclick="setFiltreTheme('',this)">Toutes</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Besoins',this)">🎡 Besoins</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Charge allostatique',this)">⚖️ Charge allo.</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Circuits du stress',this)">🧠 Circuits</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Signaux de communication',this)">🗣️ Signaux</button>
         <button class="filtre-btn" onclick="setFiltreTheme('Chiot',this)">🐶 Chiot</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Sensible',this)">🌸 Sensible</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Réactif',this)">⚡ Réactif</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Notions',this)">💡 Notions</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Pratiques',this)">📋 Pratiques</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Divers',this)">📁 Divers</button>
         <button class="filtre-btn" onclick="setFiltreTheme('Protocoles',this)">🔬 Protocoles</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Autres',this)">📁 Autres</button>
       </div>
       <div id="fiches-admin-list"><div class="vide">Chargement…</div></div>
     </div>
@@ -831,13 +832,13 @@
 
     <label>Catégorie</label>
     <select id="fiche-theme">
+      <option value="Besoins">🎡 Besoins</option>
+      <option value="Charge allostatique">⚖️ Charge allostatique</option>
+      <option value="Circuits du stress">🧠 Circuits du stress</option>
+      <option value="Signaux de communication">🗣️ Signaux de communication</option>
       <option value="Chiot">🐶 Chiot</option>
-      <option value="Sensible">🌸 Sensible</option>
-      <option value="Réactif">⚡ Réactif</option>
-      <option value="Notions">💡 Notions</option>
-      <option value="Pratiques">📋 Pratiques</option>
+      <option value="Divers">📁 Divers</option>
       <option value="Protocoles">🔬 Protocoles</option>
-      <option value="Autres">📁 Autres</option>
     </select>
 
     <label>Profil cible</label>
@@ -1732,7 +1733,7 @@ async function verifierMsgsNonLus() {
 
 // ── Fiches Admin ──
 async function chargerFichesAdmin() {
-  const { data } = await supabaseClient.from('fiches').select('*').order('created_at', { ascending: false });
+  const { data } = await supabaseClient.from('fiches').select('*').order('categorie').order('ordre');
   toutesLesfiches = data || [];
   afficherFichesAdmin(toutesLesfiches);
 }
@@ -1755,25 +1756,55 @@ function setFiltreTheme(theme, btn) {
 function afficherFichesAdmin(liste) {
   const c = document.getElementById('fiches-admin-list');
   if (liste.length === 0) { c.innerHTML = '<div class="vide">Aucune fiche</div>'; return; }
-  liste = [...liste].sort((a,b) => (a.ordre||999) - (b.ordre||999));
+  liste = [...liste].sort((a,b) => {
+    const catOrder = ['Besoins','Charge allostatique','Circuits du stress','Signaux de communication','Chiot','Divers','Protocoles'];
+    const ca = catOrder.indexOf(a.categorie);
+    const cb = catOrder.indexOf(b.categorie);
+    if (ca !== cb) return ca - cb;
+    return (a.ordre||999) - (b.ordre||999);
+  });
   c.innerHTML = '';
+  let catCourante = null;
+  const catEmojis = {'Besoins':'🎡','Charge allostatique':'⚖️','Circuits du stress':'🧠','Signaux de communication':'🗣️','Chiot':'🐶','Divers':'📁','Protocoles':'🔬'};
+  let catCourante = null;
+  let sortableContainer = null;
+
   liste.forEach(f => {
+    // En-tête de catégorie
+    if (f.categorie !== catCourante) {
+      catCourante = f.categorie;
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:12px;font-weight:700;color:#2BBFB0;text-transform:uppercase;padding:10px 0 6px;border-bottom:2px solid #e8f8f7;margin-top:10px';
+      header.textContent = (catEmojis[f.categorie]||'📁') + ' ' + (f.categorie||'—');
+      c.appendChild(header);
+      sortableContainer = document.createElement('div');
+      sortableContainer.dataset.categorie = f.categorie;
+      c.appendChild(sortableContainer);
+      new Sortable(sortableContainer, {
+        animation: 150,
+        handle: '.drag-handle',
+        onEnd: function(evt) { sauvegarderOrdre(evt.to); }
+      });
+    }
+
     const imgs = f.images_urls ? f.images_urls.split('|') : [];
     const div = document.createElement('div');
     div.className = 'fiche-item';
-    div.innerHTML = `
-      ${imgs[0] ? `<img class="fiche-thumb" src="${imgs[0]}"/>` : `<div class="fiche-thumb-placeholder">📄</div>`}
-      <div class="fiche-info">
-        <div class="fiche-titre-item">${f.titre}</div>
-        <span class="fiche-theme-item">${f.theme || '—'}</span>
-        <div class="fiche-profil-item">${labelProfil(f.profil_cible)}</div>
-      </div>
-      <div class="fiche-actions">
-        <button class="btn-icon btn-send" title="Envoyer à un client" onclick="ouvrirEnvoiFiche('${f.id}')">📬</button>
-        <button class="btn-icon btn-edit" title="Modifier" onclick="ouvrirEditionFiche('${f.id}')">✏️</button>
-        <button class="btn-icon btn-del" title="Supprimer" onclick="supprimerFiche('${f.id}')">🗑️</button>
-      </div>`;
-    c.appendChild(div);
+    div.dataset.ficheId = f.id;
+    div.innerHTML =
+      '<span class="drag-handle" style="cursor:grab;color:#ccc;font-size:18px;padding:0 8px;flex-shrink:0" title="Glisser pour réordonner">⠿</span>' +
+      (imgs[0] ? '<img class="fiche-thumb" src="'+imgs[0]+'"/>' : '<div class="fiche-thumb-placeholder">📄</div>') +
+      '<div class="fiche-info">' +
+        '<div class="fiche-titre-item">' + f.titre + '</div>' +
+        '<span class="fiche-theme-item">' + (catEmojis[f.categorie]||'') + ' ' + (f.categorie||'—') + '</span>' +
+      '</div>' +
+      '<div class="fiche-actions">' +
+        '<button class="btn-icon btn-send" title="Envoyer à un client" onclick="ouvrirEnvoiFiche(\'' + f.id + '\')">📬</button>' +
+        '<button class="btn-icon btn-edit" title="Modifier" onclick="ouvrirEditionFiche(\'' + f.id + '\')">✏️</button>' +
+        '<button class="btn-icon btn-del" title="Supprimer" onclick="supprimerFiche(\'' + f.id + '\')">🗑️</button>' +
+      '</div>';
+    if (sortableContainer) sortableContainer.appendChild(div);
+    else c.appendChild(div);
   });
 }
 
@@ -1863,6 +1894,18 @@ async function sauvegarderFiche() {
   chargerFichesAdmin();
   chargerDashboard();
   showToast(ficheEnEdition ? '✅ Fiche modifiée !' : '✅ Fiche créée !');
+}
+
+async function sauvegarderOrdre(container) {
+  const items = container.querySelectorAll('.fiche-item');
+  const updates = [];
+  items.forEach((item, index) => {
+    updates.push({ id: item.dataset.ficheId, ordre: index + 1 });
+  });
+  for (const u of updates) {
+    await supabaseClient.from('fiches').update({ ordre: u.ordre }).eq('id', u.id);
+  }
+  showToast('✅ Ordre sauvegardé !');
 }
 
 async function supprimerFiche(id) {
