@@ -1653,32 +1653,39 @@ async function verifierMessagesNonLus() {
 
 // ── Fiches ressources ──
 async function chargerFiches() {
-  const { data: envoyees } = await supabaseClient.from('fiches_envoyees')
-    .select('*, fiches(*)').eq('user_id', userId).order('envoyee_at', {ascending:false});
-  if (!envoyees) return;
-  // Trier par ordre dans la catégorie
-  envoyees.sort((a,b) => ((a.fiches?.ordre||999) - (b.fiches?.ordre||999)));
-  fichesToutes = envoyees;
-  afficherFiches(envoyees);
+  // Toutes les fiches sont accessibles à tous
+  const { data } = await supabaseClient.from('fiches')
+    .select('*')
+    .order('categorie').order('ordre');
+  if (!data) return;
+  fichesToutes = data;
+  afficherFiches(data);
 }
+
+const CAT_EMOJIS = {'Besoins':'🎡','Charge allostatique':'⚖️','Circuits du stress':'🧠','Signaux de communication':'🗣️','Chiot':'🐶','Divers':'📁','Protocoles':'🔬'};
 
 function afficherFiches(liste) {
   const container = document.getElementById('fiches-list');
-  if (liste.length === 0) { container.innerHTML = '<div class="vide">Aucune fiche dans cette catégorie</div>'; return; }
+  if (!liste || liste.length === 0) { container.innerHTML = '<div class="vide">Aucune fiche dans cette catégorie</div>'; return; }
   container.innerHTML = '';
-  liste.forEach(fe => {
-    const f = fe.fiches;
-    if (!f) return;
+  let catCourante = null;
+  liste.forEach(f => {
+    // En-tête de catégorie
+    if (f.categorie !== catCourante) {
+      catCourante = f.categorie;
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:12px;font-weight:700;color:#2BBFB0;text-transform:uppercase;padding:10px 4px 6px;border-bottom:2px solid #e8f8f7;margin-top:8px';
+      header.textContent = (CAT_EMOJIS[f.categorie]||'📁') + ' ' + (f.categorie||'—');
+      container.appendChild(header);
+    }
     const imgs = f.images_urls ? f.images_urls.split('|') : [];
     const div = document.createElement('div');
     div.className = 'fiche-card';
-    div.onclick = () => ouvrirFiche(f, fe);
-    const catEmoji = {Chiot:'🐶',Sensible:'🌸','Réactif':'⚡',Notions:'💡',Pratiques:'📋',Protocoles:'🔬',Autres:'📁'}[f.categorie] || '';
+    div.onclick = () => ouvrirFiche(f, null);
     div.innerHTML =
       (imgs[0] ? '<img class="fiche-img" src="' + imgs[0] + '" alt="' + f.titre + '"/>' : '') +
       '<div class="fiche-body">' +
-        '<span class="fiche-theme">' + catEmoji + ' ' + (f.categorie || f.theme || 'Général') + '</span>' +
-        (!fe.vue ? '<span class="fiche-nouvelle">NOUVEAU</span>' : '') +
+        '<span class="fiche-theme">' + (CAT_EMOJIS[f.categorie]||'') + ' ' + (f.categorie||'Général') + '</span>' +
         '<div class="fiche-titre">' + f.titre + '</div>' +
       '</div>';
     container.appendChild(div);
@@ -1689,12 +1696,12 @@ function filtrerFiches(cat, btn) {
   document.querySelectorAll('.filtre-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (cat === 'tous') { afficherFiches(fichesToutes); return; }
-  afficherFiches(fichesToutes.filter(fe => fe.fiches && fe.fiches.categorie === cat));
+  afficherFiches(fichesToutes.filter(f => f.categorie === cat));
 }
 
 function ouvrirFiche(f, fe) {
-  // Marquer comme vue
-  if (!fe.vue) { supabaseClient.from('fiches_envoyees').update({ vue: true }).eq('id', fe.id).then(() => {}); }
+  // Marquer comme vue si fiches_envoyees existe
+  if (fe && !fe.vue) { supabaseClient.from('fiches_envoyees').update({ vue: true }).eq('id', fe.id).then(() => {}); }
 
   const imgs = f.images_urls ? f.images_urls.split('|') : [];
   const overlay = document.createElement('div');
