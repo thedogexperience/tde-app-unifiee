@@ -1656,6 +1656,8 @@ async function chargerFiches() {
   const { data: envoyees } = await supabaseClient.from('fiches_envoyees')
     .select('*, fiches(*)').eq('user_id', userId).order('envoyee_at', {ascending:false});
   if (!envoyees) return;
+  // Trier par ordre dans la catégorie
+  envoyees.sort((a,b) => ((a.fiches?.ordre||999) - (b.fiches?.ordre||999)));
   fichesToutes = envoyees;
   afficherFiches(envoyees);
 }
