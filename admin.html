@@ -1388,8 +1388,8 @@ async function envoyerReactionRapide(type) {
   });
   if (error) { showToast('❌ Erreur'); return; }
 
-  // Email au client si ce n'est pas juste "fiche vue"
-  if (type !== 'vue' && clientSelectionne.email) {
+  // Email au client uniquement pour les vrais messages (pas fiche vue)
+  if (type === 'message' && clientSelectionne.email) {
     try {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
         client_prenom: clientSelectionne.prenom,
@@ -1932,7 +1932,7 @@ async function envoyerAnnonce() {
 
   ['annonce-titre','annonce-contenu','annonce-image'].forEach(id => document.getElementById(id).value = '');
   chargerAnnonces();
-  showToast('✅ Annonce publiée pour tous les clients !');
+  showToast('✅ Annonce publiée ! Vos clients la verront à leur prochaine connexion.');
 }
 
 async function supprimerAnnonce(id) {
