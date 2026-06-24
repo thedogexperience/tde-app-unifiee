@@ -598,14 +598,13 @@
           <input class="recherche" id="recherche-fiches-client" placeholder="🔍 Rechercher…" oninput="filtrerFichesClient()" style="margin-bottom:8px"/>
           <div class="filtres" id="filtres-fiches-client" style="margin-bottom:10px">
             <button class="filtre-btn active" onclick="setFiltreClient('',this)">Toutes</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Lien',this)">Lien</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Comportement',this)">Comportement</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Réactivité',this)">Réactivité</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Sensibilité',this)">Sensibilité</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Sommeil',this)">Sommeil</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Socialisation',this)">Socialisation</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Quotidien',this)">Quotidien</button>
-            <button class="filtre-btn" onclick="setFiltreClient('Santé',this)">Santé</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Chiot',this)">🐶 Chiot</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Sensible',this)">🌸 Sensible</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Réactif',this)">⚡ Réactif</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Notions',this)">💡 Notions</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Pratiques',this)">📋 Pratiques</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Protocoles',this)">🔬 Protocoles</button>
+            <button class="filtre-btn" onclick="setFiltreClient('Autres',this)">📁 Autres</button>
           </div>
           <div id="fiches-client-envoyees"><div class="vide">Aucune fiche envoyée</div></div>
         </div>
@@ -719,14 +718,13 @@
       <input class="recherche" id="recherche-fiches" placeholder="🔍 Rechercher une fiche…" oninput="filtrerFichesAdmin()"/>
       <div class="filtres" id="filtres-fiches">
         <button class="filtre-btn active" onclick="setFiltreTheme('',this)">Toutes</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Lien',this)">Lien</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Comportement',this)">Comportement</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Réactivité',this)">Réactivité</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Sensibilité',this)">Sensibilité</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Sommeil',this)">Sommeil</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Socialisation',this)">Socialisation</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Quotidien',this)">Quotidien</button>
-        <button class="filtre-btn" onclick="setFiltreTheme('Santé',this)">Santé</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Chiot',this)">🐶 Chiot</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Sensible',this)">🌸 Sensible</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Réactif',this)">⚡ Réactif</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Notions',this)">💡 Notions</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Pratiques',this)">📋 Pratiques</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Protocoles',this)">🔬 Protocoles</button>
+        <button class="filtre-btn" onclick="setFiltreTheme('Autres',this)">📁 Autres</button>
       </div>
       <div id="fiches-admin-list"><div class="vide">Chargement…</div></div>
     </div>
@@ -831,16 +829,15 @@
     <label>Titre</label>
     <input type="text" id="fiche-titre" placeholder="Titre de la fiche"/>
 
-    <label>Thème</label>
+    <label>Catégorie</label>
     <select id="fiche-theme">
-      <option>Lien</option>
-      <option>Comportement</option>
-      <option>Réactivité</option>
-      <option>Sensibilité</option>
-      <option>Sommeil</option>
-      <option>Socialisation</option>
-      <option>Quotidien</option>
-      <option>Santé</option>
+      <option value="Chiot">🐶 Chiot</option>
+      <option value="Sensible">🌸 Sensible</option>
+      <option value="Réactif">⚡ Réactif</option>
+      <option value="Notions">💡 Notions</option>
+      <option value="Pratiques">📋 Pratiques</option>
+      <option value="Protocoles">🔬 Protocoles</option>
+      <option value="Autres">📁 Autres</option>
     </select>
 
     <label>Profil cible</label>
@@ -1123,7 +1120,7 @@ async function chargerFichesClientEnvoyees() {
         (imgs[0] ? '<img class="fiche-thumb" src="'+imgs[0]+'"/>' : '<div class="fiche-thumb-placeholder">📄</div>') +
         '<div class="fiche-info">' +
           '<div class="fiche-titre-item">' + f.titre + '</div>' +
-          '<span class="fiche-theme-item">' + (f.theme || '—') + '</span>' +
+          '<span class="fiche-theme-item">' + ({Chiot:'🐶',Sensible:'🌸','Réactif':'⚡',Notions:'💡',Pratiques:'📋',Protocoles:'🔬',Autres:'📁'}[f.categorie]||'') + ' ' + (f.categorie || f.theme || '—') + '</span>' +
           '<div class="fiche-profil-item">' + (fe.vue ? '✅ Vue' : '🆕 Non vue') + ' · ' + new Date(fe.envoyee_at).toLocaleDateString('fr-FR') + '</div>' +
         '</div>' +
         '<button class="btn-icon btn-del" title="Retirer" onclick="retirerFicheClient(\'' + fe.id + '\')">🗑️</button>';
@@ -1740,7 +1737,7 @@ async function chargerFichesAdmin() {
 function filtrerFichesAdmin() {
   const q = document.getElementById('recherche-fiches').value.toLowerCase();
   let liste = toutesLesfiches;
-  if (filtreTheme) liste = liste.filter(f => f.theme === filtreTheme);
+  if (filtreTheme) liste = liste.filter(f => f.categorie === filtreTheme);
   if (q) liste = liste.filter(f => f.titre.toLowerCase().includes(q) || (f.contenu||'').toLowerCase().includes(q));
   afficherFichesAdmin(liste);
 }
@@ -1841,6 +1838,7 @@ async function sauvegarderFiche() {
   const donnees = {
     titre,
     theme: document.getElementById('fiche-theme').value,
+    categorie: document.getElementById('fiche-theme').value,
     profil_cible: document.getElementById('fiche-profil').value,
     contenu: document.getElementById('fiche-contenu').value || null,
     images_urls: imagesUrls.join('|') || null,
